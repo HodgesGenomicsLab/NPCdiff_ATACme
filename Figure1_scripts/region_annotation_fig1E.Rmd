@@ -1,0 +1,33 @@
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(data.table)
+library(gghighlight)
+library(ChIPseeker)
+library(clusterProfiler)
+library(data.table)
+library(ReactomePA)
+library(enrichplot)
+library(DOSE)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+```{r}
+setwd("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq")
+
+listOfFiles <- list("cluster3"= "peak_subset_cluster_3.bed", "cluster1" = "peak_subset_cluster_1.bed", "cluster2"= "peak_subset_cluster_2.bed", "cluster6" = "peak_subset_cluster_6.bed", "cluster4"= "peak_subset_cluster_4.bed", "cluster7" = "peak_subset_cluster_7.bed", "cluster5" = "peak_subset_cluster_5.bed", "static" = "peak_subset_static.bed")
+
+simplified_listOfFiles <- list("dynamic" = "peak_subset_dynamic.bed", "static" = "peak_subset_static.bed")
+
+peakAnnoList <- lapply(listOfFiles, annotatePeak, TxDb=txdb,
+                       tssRegion=c(-2000, 500), verbose=FALSE,
+                                  assignGenomicAnnotation = TRUE,
+                                  genomicAnnotationPriority = c("Promoter", "5UTR", "3UTR", "Exon", "Intron", "Downstream", "Intergenic"),
+                                  annoDb="org.Hs.eg.db", addFlankGeneInfo = TRUE,
+                                  flankDistance = 10000, sameStrand = FALSE, ignoreOverlap = FALSE, 
+                                  ignoreUpstream = FALSE, ignoreDownstream = FALSE, 
+                                  overlap = "all")
+
+peakAnnotation <- plotAnnoBar(peakAnnoList)
+peakAnnotation
+ggsave(peakAnnotation, file = "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/AccCluster_annotation_barplot_wStatic.pdf", device = cairo_pdf)
+```
