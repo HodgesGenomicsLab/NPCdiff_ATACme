@@ -1,0 +1,59 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --time=4:00:00
+#SBATCH --mem=32G
+#SBATCH --error=dynamicPeak_heatmap.error
+#SBATCH --out=dynamicPeak_heatmap.out
+#SBATCH --mail-user=lindsey.n.guerin@vanderbilt.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="dynamic_heatmap"
+
+module restore anaconda
+source activate deeptools
+
+SIGNAL=/data/hodges_lab/NPCdiff_ATACme/data/tracks
+PEAK=/data/hodges_lab/NPCdiff_ATACme/data/TC_seq
+OUT_DIR=/data/hodges_lab/NPCdiff_ATACme/data/heatmaps
+
+computeMatrix scale-regions -S ${SIGNAL}/NPCdiffATACme0hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme6hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme12hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme24hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme48hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme72hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme108hr_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme6day_merge_filtered.bw \
+        ${SIGNAL}/NPCdiffATACme12day_merge_filtered.bw \
+        -R ${PEAK}/peak_subset_dynamic.sort.bed ${PEAK}/peak_subset_static.sort.bed\
+        -b 300 -a 300 -bs 25 --sortRegions descend --sortUsingSamples 1 \
+        -o ${OUT_DIR}/Acc_dynamic_staticPeaks.mat --outFileSortedRegions ${OUT_DIR}/dynamic_staticPeaks_accSorted.bed
+
+plotHeatmap -m ${OUT_DIR}/Acc_dynamic_staticPeaks.mat -o ${OUT_DIR}/Acc_dynamic_staticPeaks.pdf \
+        --missingDataColor silver --boxAroundHeatmaps no --colorMap YlGnBu \
+        --heatmapHeight 40 --heatmapWidth 10 --sortRegions keep \
+        --xAxisLabel "DNA Accessibility" --startLabel "Region Start" \
+        --endLabel "Region End" --refPointLabel "Region Center" \
+        --samplesLabel "0hr" "6hr" "12hr" "24hr" "48hr" "72hr" "108hr" "6day" "12day"
+
+computeMatrix scale-regions -S ${SIGNAL}/NPCdiffATACme0hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme6hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme12hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme24hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme48hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme72hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme108hr_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme6day_merge.meth.bw \
+        ${SIGNAL}/NPCdiffATACme12day_merge.meth.bw \
+        -R ${OUT_DIR}/dynamic_staticPeaks_accSorted.bed \
+        -b 1000 -a 1000 -m 500 -bs 50 --sortRegions keep \
+        -o ${OUT_DIR}/Meth_dynamic_staticPeaks.mat
+
+plotHeatmap -m ${OUT_DIR}/Meth_dynamic_staticPeaks.mat -o ${OUT_DIR}/Meth_dynamic_staticPeaks.pdf \
+        --missingDataColor silver --boxAroundHeatmaps no --colorMap Blues \
+        --heatmapHeight 40 --heatmapWidth 10 --interpolationMethod nearest \
+        --sortRegions keep --xAxisLabel "DNA Methylation" --yMin 0 --yMax 1 \
+        --startLabel "Region Start" --endLabel "Region End" --refPointLabel "Region Center" \
+        --samplesLabel "0hr" "6hr" "12hr" "24hr" "48hr" "72hr" "108hr" "6day" "12day"
+
