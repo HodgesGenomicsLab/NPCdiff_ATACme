@@ -1,0 +1,74 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=x:00:00
+#SBATCH --mem=xG
+#SBATCH --output=MethPipe_%A.out
+#SBATCH --error=MethPipe_%A.error
+#SBATCH --mail-user=your.email@domain.com
+#SBATCH --mail-type=END
+#SBATCH --job-name="MethPipe"
+
+# Necessary to set this for proper sorting
+export LC_ALL=C
+
+# Sets up naming scheme for output files
+MAPPED=`basename $SAM .bam`
+
+# Loads samtools via LMOD from cluster computing environment
+module restore tools
+
+# Convert sam output from walt to bam filetype
+samtools view -Sb  ${SAM}  >  ${PROCESSED_DIR}/${MAPPED}.bam
+
+#echo "bam generate complete for ${PROCESSED_DIR}/${MAPPED}.bam"
+module restore tools
+
+# Convert bam output to mapped read format used by methpipe tools
+to-mr -o ${PROCESSED_DIR}/${MAPPED}.mr -m general ${PROCESSED_DIR}/${MAPPED}.bam
+echo "mr generate complete for ${MAPPED}.bam"
+
+# Sort mapped read format file
+sort -k 1,1 -k 2,2n -k 3,3n -k 6,6 -T ${PROCESSED_DIR} ${PROCESSED_DIR}/${MAPPED}.mr -o ${PROCESSED_DIR}/${MAPPED}.sort.mr
+echo "mr sort complete for ${MAPPED}.bam"
+
+# Remove duplicate reads
+duplicate-remover -s -A -S ${PROCESSED_DIR}/${MAPPED}.dupstats -o ${PROCESSED_DIR}/${MAPPED}.mr.dremove ${PROCESSED_DIR}/${MAPPED}.sort.mr
+echo "duplicate remove complete for ${MAPPED}.bam"
+
+# Estimate bisulfite conversion rate for sequencing library
+bsrate  -c ${CHROM_DIR} ${PROCESSED_DIR}/${MAPPED}.mr.dremove -o ${PROCESSED_DIR}/${MAPPED}.bsrate
+echo "bsrate calculation complete for ${MAPPED}.bam"
+
+# Generate epiread formate files for use in other downstream methpipe tools such as finding DMRs
+methstates -c ${CHROM_DIR} ${PROCESSED_DIR}/${MAPPED}.mr.dremove -o ${PROCESSED_DIR}/${MAPPED}.epiread
+
+# Calculate methylation rate for all individual cytosines in the genome
+methcounts -c ${CHROM_DIR} -o ${PROCESSED_DIR}/${MAPPED}.all.meth ${PROCESSED_DIR}/${MAPPED}.mr.dremove
+echo "generate .all.meth file complete for ${MAPPED}.bam"
+
+# Calculate statistics on the coverage and methylation levels for different context cytosines
+levels -o ${PROCESSED_DIR}/${MAPPED}.levels  ${PROCESSED_DIR}/${MAPPED}.all.meth
+echo "generate .levels complete for ${MAPPED}"
+
+# Get methylation rate for only symmetric CpG context cytosines
+symmetric-cpgs -m -o ${PROCESSED_DIR}/${MAPPED}.meth ${PROCESSED_DIR}/${MAPPED}.all.meth
+echo "generate .meth for ${MAPPED}"
+
+# Scan for hypomethylated regions
+# This tool is geared primarily for WGBS data
+# Still in development for use with ATACMe data
+hmr -o ${PROCESSED_DIR}/${MAPPED}.hmr  -p ${PROCESSED_DIR}/${MAPPED}.hmrparams  ${PROCESSED_DIR}/${MAPPED}.meth
+echo "generate hmr file for ${MAPPED}"
+
+# Generate bigwig of symmetric CpG covering reads
+awk '{OFS="\t"; print $1,$2,$2+1,$6}' < ${PROCESSED_DIR}/${MAPPED}.meth | wigToBigWig /dev/stdin ${SIZES_DIR} ${TRACK_DIR}/${MAPPED}.read.bw
+
+# Generate bigwig of methylation levels for symmetric CpGs
+awk '{OFS="\t"; print $1,$2,$2+1,$5}' < ${PROCESSED_DIR}/${MAPPED}.meth | wigToBigWig /dev/stdin ${SIZES_DIR} ${TRACK_DIR}/${MAPPED}.meth.bw
+
+# Generate bigBed file of genomic intervals called as hypomethylated regions
+cut -f 1-3 ${PROCESSED_DIR}/${MAPPED}.hmr > ${PROCESSED_DIR}/${MAPPED}.hmr.tmp
+bedToBigBed ${PROCESSED_DIR}/${MAPPED}.hmr.tmp ${SIZES_DIR} ${TRACK_DIR}/${MAPPED}.hmr.bb && rm ${PROCESSED_DIR}/${MAPPED}.hmr.tmp
+
+
