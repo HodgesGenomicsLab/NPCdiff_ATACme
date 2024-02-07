@@ -1,0 +1,37 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=x
+#SBATCH --time=x:00:00
+#SBATCH --mem=xG
+#SBATCH --output=correlation.out
+#SBATCH --error=correlation.error
+#SBATCH --mail-user=your.email@domain.com
+#SBATCH --mail-type=END
+#SBATCH --job-name="correlation"
+
+module restore anaconda
+source activate deeptools
+
+OUT=/your/path
+PEAK_DIR=/your/path
+
+multiBamSummary BED-file --BED ${PEAK_DIR}/NPCdiffATACme_filtered_consensus.narrowPeak \
+        -b /data/hodges_lab/NPCdiff_ATACme/data/mapped_reads/*_filtered.bam \
+        -o ${OUT}/bamCorrelation_results.npz --smartLabels \
+        -bl /data/hodges_lab/hg38_genome/hg38.blacklist.bed \
+        -p max
+
+plotPCA --corData ${OUT}/bamCorrelation_results.npz -o correlation_PCA.eps --markers 'o'
+
+plotCorrelation -in ${OUT}/bamCorrelation_results.npz --corMethod pearson -p scatterplot \
+        -o correlation_scatterplot_pearson.pdf --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/bamCorrelation_results.npz --corMethod spearman -p scatterplot \
+        -o correlation_scatterplot_spearman.pdf --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/bamCorrelation_results.npz --corMethod pearson -p heatmap \
+        -o correlation_heatmap_pearson.pdf --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/bamCorrelation_results.npz --corMethod spearman -p heatmap \
+        -o correlation_heatmap_spearman.pdf --skipZeros --log1p --removeOutliers
