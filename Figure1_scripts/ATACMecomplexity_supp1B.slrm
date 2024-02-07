@@ -1,0 +1,47 @@
+#!/bin/bash
+#SBATCH --mail-user=you.email@domain.com
+#SBATCH --mail-type=END
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=x
+#SBATCH --mem=xG
+#SBATCH --time=x:00:00
+#SBATCH --output=complexity_%A.out
+#SBATCH --error=complexity_%A.err
+
+#This script will run the lc_extrap command to estimate the complexity of the library if I were to sequence at a greater depth
+#This script will also use picard's estimate library complexity tool as another way to measure complexity.
+#As an additional analysis, this script will also collect the distribution of the insert sizes.
+#Together this script should be run directly after initial processing.
+#The input is a pos sorted bam file and the output is a table (as .txt) that I can important into R to make a plot with ggpplot
+#preseq is dependant on GSL, which is dependant on GCC. These are assembled into the preseq lmod collection.
+
+INPUT_DIR=/your/path
+OUTPUT_DIR=/your/path
+
+
+for i in 0hr 6hr 12hr 24hr 48hr 72hr 108hr 6day 12day
+do
+  	#lc_extrap (preseq)
+    module restore preseq
+    /home/hansetj1/preseq/preseq lc_extrap -pe -verbose -o ${OUTPUT_DIR}/rep1_${i}_lc-extrap-results.txt -bam ${INPUT_DIR}/NPCdiffATACme${i}_rep1_filtered.bam
+    #c_curve (preseq)
+    /home/hansetj1/preseq/preseq c_curve -pe -verbose -o ${OUTPUT_DIR}/rep1_${i}_c-curve-results.txt -bam ${INPUT_DIR}/NPCdiffATACme${i}_rep1_filtered.bam
+    #picard estimate library complexity
+    module load picard/2.18.27
+    java -jar $EBROOTPICARD/picard.jar EstimateLibraryComplexity I=${INPUT_DIR}/NPCdiffATACme${i}_rep1_filtered.bam O=${OUTPUT_DIR}/rep1_${i}_picard-ELC.txt
+    #picard collect insert-size-metrics
+    java -jar $EBROOTPICARD/picard.jar CollectInsertSizeMetrics I=${INPUT_DIR}/NPCdiffATACme${i}_rep1_filtered.bam H=${OUTPUT_DIR}/rep1_${i}_histogram.pdf O=${OUTPUT_DIR}/$
+
+    #lc_extrap (preseq)
+    module restore preseq
+    /home/hansetj1/preseq/preseq lc_extrap -pe -verbose -o ${OUTPUT_DIR}/rep2_${i}_lc-extrap-results.txt -bam ${INPUT_DIR}/NPCdiffATACme${i}_rep2_filtered.bam
+    #c_curve (preseq)
+    /home/hansetj1/preseq/preseq c_curve -pe -verbose -o ${OUTPUT_DIR}/rep2_${i}_c-curve-results.txt -bam ${INPUT_DIR}/NPCdiffATACme${i}_rep2_filtered.bam
+    #picard estimate library complexity
+    module load picard/2.18.27
+    java -jar $EBROOTPICARD/picard.jar EstimateLibraryComplexity I=${INPUT_DIR}/NPCdiffATACme${i}_rep2_filtered.bam O=${OUTPUT_DIR}/rep2_${i}_picard-ELC.txt
+    #picard collect insert-size-metrics
+    java -jar $EBROOTPICARD/picard.jar CollectInsertSizeMetrics I=${INPUT_DIR}/NPCdiffATACme${i}_rep2_filtered.bam H=${OUTPUT_DIR}/rep2_${i}_histogram.pdf O=${OUTPUT_DIR}/$
+
+done
