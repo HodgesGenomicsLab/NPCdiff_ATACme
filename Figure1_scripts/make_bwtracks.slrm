@@ -1,0 +1,51 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=x:00:00
+#SBATCH --mem=xG
+#SBATCH --cpus-per-task=x
+#SBATCH --job-name=makeTracks
+#SBATCH --output=makeTracks.out
+#SBATCH --error=makeTracks.error
+#SBATCH --mail-user=your.email@domain.com
+#SBATCH --mail-type=END
+
+
+module restore tools
+#SAMtools/1.9    BEDTools/2.28.0    GSL/2.5    GCC/8.2.0    BamTools/2.5.1    Anaconda3/5.0.1
+
+METH=/your/path
+TRACKS=/your/path
+BAM=/your/path
+
+for i in 0hr 6hr 12hr 24hr 48hr 72hr 108hr 6day 12day
+do
+
+# Generate bigwig of symmetric CpG covering reads
+awk '{OFS="\t"; print $1,$2,$2+1,$6}' ${METH}/NPCdiffATACme${i}_merge.cov5.meth > ${METH}/NPCdiffATACme${i}_merge.cov5.wig
+wigToBigWig ${METH}/NPCdiffATACme${i}_merge.cov5.wig /data/hodges_lab/hg38_genome/hg38.chrom.sizes ${TRACKS}/NPCdiffATACme${i}_merge_cov5_meth.bw
+rm ${METH}/NPCdiffATACme${i}_merge.cov5.wig
+
+#merge filtered bams for replicates
+samtools merge -f -@ 8 ${TRACKS}/NPCdiffATACme${i}_merge_filtered.bam ${BAM}/NPCdiffATACme${i}_rep1_filtered.bam ${BAM}/NPCdiffATACme${i}_rep2_filtered.bam
+samtools index -@ 8 ${TRACKS}/NPCdiffATACme${i}_merge_filtered.bam ${TRACKS}/NPCdiffATACme${i}_merge_filtered.bam.bai
+
+module restore anaconda
+source activate deeptools
+
+#generate bigwig of accessibility from merged replicates
+bamCoverage --normalizeUsing RPKM -b ${TRACKS}/NPCdiffATACme${i}_merge_filtered.bam -o ${TRACKS}/NPCdiffATACme${i}_merge_filtered.bw
+
+module restore tools
+
+#scan for hypomethylated regions from merged .meth file
+hmr -o ${METH}/NPCdiffATACme${i}_merge.hmr -p ${METH}/NPCdiffATACme${i}_merge.hmrparams ${METH}/NPCdiffATACme${i}_merge.cov5.meth
+
+
+# Generate bigBed file of genomic intervals called as hypomethylated regions
+cut -f 1-3 ${METH}/NPCdiffATACme${i}_merge.hmr > ${METH}/NPCdiffATACme${i}_merge.hmr.tmp
+bedToBigBed ${METH}/NPCdiffATACme${i}_merge.hmr.tmp /data/hodges_lab/hg38_genome/hg38.chrom.sizes \
+        ${TRACKS}/NPCdiffATACme${i}_merge.hmr.bb && rm ${METH}/NPCdiffATACme${i}_merge.hmr.tmp
+
+echo "complete ${i} tracks"
+done
