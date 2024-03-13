@@ -1,0 +1,102 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=5:00:00
+#SBATCH --mem=128G
+#SBATCH --output=correlation.out
+#SBATCH --error=correlation.error
+#SBATCH --mail-user=lindsey.n.guerin@vanderbilt.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="correlation"
+
+module restore anaconda
+source activate deeptools
+OUT = '/data/hodges_lab/NPCdiff_ATACme/data/correlation'
+
+#correlation between 6L-seq hmC signal and ATACme signal over all peak regions
+multiBigwigSummary BED-file -b /data/hodges_lab/NPCdiff_ATACme/data/tracks/*_merge_cov5_meth.bw \
+        /data/hodges_lab/6L_seq/*hmC_proportion.bw \
+        -o ${OUT}/hmC6L_ATACme_correlation_allpeaks_results.npz \
+        --smartLabels --chromosomesToSkip chrX chrY chrM \
+        --BED /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/gf_tcseq.sort.bed \
+        -bl /data/hodges_lab/hg38_genome/hg38.blacklist.bed --outRawCounts bw_scores_per_bin.tab \
+        -p max
+
+plotCorrelation -in ${OUT}/hmC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod pearson -p scatterplot \
+        -o ${OUT}/hmC6L_ATACme_correlation_allpeaks_scatter_pearson.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/hmC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod spearman -p scatterplot \
+        -o ${OUT}/hmC6L_ATACme_correlation_allpeaks_scatter_spearman.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/hmC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod pearson -p heatmap \
+        -o ${OUT}/hmC6L_ATACme_correlation_allpeaks_heat_pearson.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/hmC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod spearman -p heatmap \
+        -o ${OUT}/hmC6L_ATACme_correlation_allpeaks_heat_spearman.pdf \
+        --skipZeros --log1p --removeOutliers
+
+#correlation between 6L-seq methylation signal and ATACme signal over all peak regions
+multiBigwigSummary BED-file -b /data/hodges_lab/NPCdiff_ATACme/data/tracks/*_merge_cov5_meth.bw \
+        /data/hodges_lab/6L_seq/*mC_proportion.bw \
+        -o ${OUT}/mC6L_ATACme_correlation_allpeaks_results.npz \
+        --smartLabels --chromosomesToSkip chrX chrY chrM \
+        --BED /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/gf_tcseq.sort.bed \
+        -bl /data/hodges_lab/hg38_genome/hg38.blacklist.bed --outRawCounts bw_scores_per_bin.tab \
+        -p max
+
+plotCorrelation -in ${OUT}/mC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod pearson -p scatterplot \
+        -o ${OUT}/mC6L_ATACme_correlation_allpeaks_scatter_pearson.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/mC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod spearman -p scatterplot \
+        -o ${OUT}/mC6L_ATACme_correlation_allpeaks_scatter_spearman.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/mC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod pearson -p heatmap \
+        -o ${OUT}/mC6L_ATACme_correlation_allpeaks_heat_pearson.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/mC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod spearman -p heatmap \
+        -o ${OUT}/mC6L_ATACme_correlation_allpeaks_heat_spearman.pdf \
+        --skipZeros --log1p --removeOutliers
+
+#correlation between 6L-seq total modC signal and ATACme signal over all peak regions        
+multiBigwigSummary BED-file -b /data/hodges_lab/NPCdiff_ATACme/data/tracks/*_merge_cov5_meth.bw \
+        /data/hodges_lab/6L_seq/*modC_proportion.bw \
+        -o ${OUT}/modC6L_ATACme_correlation_allpeaks_results.npz \
+        --smartLabels --chromosomesToSkip chrX chrY chrM \
+        --BED /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/gf_tcseq.sort.bed \
+        -bl /data/hodges_lab/hg38_genome/hg38.blacklist.bed --outRawCounts bw_scores_per_bin.tab \
+        -p max
+
+plotCorrelation -in ${OUT}/modC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod pearson -p scatterplot \
+        -o ${OUT}/modC6L_ATACme_correlation_allpeaks_scatter_pearson.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/modC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod spearman -p scatterplot \
+        -o ${OUT}/modC6L_ATACme_correlation_allpeaks_scatter_spearman.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/modC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod pearson -p heatmap \
+        -o ${OUT}/modC6L_ATACme_correlation_allpeaks_heat_pearson.pdf \
+        --skipZeros --log1p --removeOutliers
+
+plotCorrelation -in ${OUT}/modC6L_ATACme_correlation_allpeaks_results.npz \
+		--corMethod spearman -p heatmap \
+        -o ${OUT}/modC6L_ATACme_correlation_allpeaks_heat_spearman.pdf \
+        --skipZeros --log1p --removeOutliers
