@@ -1,0 +1,42 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --time=1:00:00
+#SBATCH --mem=32G
+#SBATCH --error=cov5bw.error
+#SBATCH --out=cov5bw.out
+#SBATCH --mail-user=lindsey.n.guerin@vanderbilt.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="cov5bw"
+
+# Necessary to set this for proper sorting
+export LC_ALL=C
+
+# Loads samtools via LMOD from cluster computing environment
+module restore tools
+
+for i in 0day 4day 8day
+do
+
+PROCESSED_DIR=/data/hodges_lab/6L_seq
+SIZES_DIR=/data/hodges_lab/hg38_genome/hg38.chrom.sizes
+
+# Generate bigwig of methylation levels for symmetric CpGs
+awk '(NR>1)' ${PROCESSED_DIR}/${i}.dedup.duet-hmC.CG_quant.combined.bed > ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed
+#extract hmC column to print proportion hmC out of all reads, filter, and make bw
+awk '{ if($8 >0) { print }}' ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed | awk -v OFS='\t' '{$9 = $6 / $8}1'  > ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion.bed
+awk 'BEGIN{OFS=FS="\t"}{if ($1~/chr/ && $1!~/\_/) print}' ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion.bed > ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion_filt.bed
+awk '{OFS="\t"; print $1,$2,$3,$9}' < ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion_filt.bed | wigToBigWig /dev/stdin ${SIZES_DIR} ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion.bw
+
+#extract mC column to print proportion mC out of all reads, filter, and make bw
+awk '{ if($8 >0) { print }}' ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed | awk -v OFS='\t' '{$9 = $5 / $8}1'  > ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion.bed
+awk 'BEGIN{OFS=FS="\t"}{if ($1~/chr/ && $1!~/\_/) print}' ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion.bed > ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion_filt.bed
+awk '{OFS="\t"; print $1,$2,$3,$9}' < ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion_filt.bed | wigToBigWig /dev/stdin ${SIZES_DIR} ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion.bw
+
+#extract mC column to print proportion mC out of all reads, filter, and make bw
+awk '{ if($8 >0) { print }}' ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed | awk -v OFS='\t' '{$9 = $4 / $8}1'  > ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion.bed
+awk 'BEGIN{OFS=FS="\t"}{if ($1~/chr/ && $1!~/\_/) print}' ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion.bed > ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion_filt.bed
+awk '{OFS="\t"; print $1,$2,$3,$9}' < ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion_filt.bed | wigToBigWig /dev/stdin ${SIZES_DIR} ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion.bw
+
+done
