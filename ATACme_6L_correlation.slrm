@@ -12,7 +12,7 @@
 
 module restore anaconda
 source activate deeptools
-OUT = '/data/hodges_lab/NPCdiff_ATACme/data/correlation'
+OUT='/data/hodges_lab/NPCdiff_ATACme/data/correlation'
 
 #correlation between 6L-seq hmC signal and ATACme signal over all peak regions
 multiBigwigSummary BED-file -b /data/hodges_lab/NPCdiff_ATACme/data/tracks/*_merge_cov5_meth.bw \
