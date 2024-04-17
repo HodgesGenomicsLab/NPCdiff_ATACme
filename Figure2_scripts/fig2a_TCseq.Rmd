@@ -1,0 +1,128 @@
+---
+title: "TC-seq CLustering Analysis"
+---
+# Clustering of Temporal Accessibility Behavior
+
+Input files produced on ACCRE 
+files were downloaded locally via Cyberduck
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(pheatmap)
+library(tidyverse)
+library(RColorBrewer)
+library(data.table)
+library(TCseq)
+library(egg)
+
+load("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/tcseq_genrich_count_obj.Rdata")
+NPC_t <- read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/TCseq_NPCdiff_ATAC_ExpressionTable.txt", col_names = c("peakID", "0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day"), skip = 1) %>% column_to_rownames(var = "peakID")
+
+```
+
+TCseq performs fuzzy, c-means clustering which requires you to choose a cluster number
+to inform this decision perform a gap statistic calculation first which can be visualized
+```{r warning=FALSE}
+kmax <- 15
+wss_NPC <-sapply(1:kmax,
+                 function(k){kmeans(NPC_t, k,
+                 nstart = 50, iter.max= 15) $tot.withinss})
+```
+
+```{r echo= FALSE}
+plot(1:kmax, wss_NPC,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+## Create k-means Heatmap
+visualize different cluster numbers based off the resulting gap statistic plot 
+```{r}
+set.seed(123)
+NPC_TCseq_6cluster<- pheatmap(as.matrix(NPC_t), 
+                             color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdYlBu")))(100), 
+                             cellwidth = 30, cellheight = 15, 
+                             cluster_cols=FALSE, kmeans_k = 6, 
+                             scale = "row")
+NPC_TCseq_7cluster<- pheatmap(as.matrix(NPC_t), 
+                             color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdYlBu")))(100), 
+                             cellwidth = 30, cellheight = 15, 
+                             cluster_cols=FALSE, kmeans_k = 7, 
+                             scale = "row")
+NPC_TCseq_8cluster<- pheatmap(as.matrix(NPC_t), 
+                             color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdYlBu")))(100), 
+                             cellwidth = 30, cellheight = 15, 
+                             cluster_cols=FALSE, kmeans_k = 8, 
+                             scale = "row")
+NPC_TCseq_9cluster<- pheatmap(as.matrix(NPC_t), 
+                             color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdYlBu")))(100), 
+                             cellwidth = 30, cellheight = 15, 
+                             cluster_cols=FALSE, kmeans_k = 9, 
+                             scale = "row")
+ggsave(NPC_TCseq_6cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_6cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_7cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_7cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_8cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_8cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_9cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_9cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+
+
+```
+Cluster time course data into 7 clusters via fuzzy c-means clustering and plot the different clusters
+```{r}
+set.seed(123)
+
+#cluster into 7 clusters
+tca <- timeclust(tca, algo = "cm", k=7, standardize = TRUE)
+
+#plot linegraphs of standardized accessibility signal over the timecourse
+p <- timeclustplot(tca, value = "z-score(PRKM)", cols = 2, membership.color = topo.colors(30), categories = "timepoint")
+plots<- ggarrange(plots = p, ncol=2)
+
+plots
+
+ggsave(plots, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/7cluster_TCseq_linegraph_2.pdf", units = "in", height = 16, width = 12, device = cairo_pdf)
+
+## Make a dataframe of peaks with cluster information
+# at this point, tca is the object that resulted from calling timeclust()
+cluster = as.data.frame(tca@clusterRes@cluster) %>% rownames_to_column("id")
+tca_clust_gf = as.data.frame(tca@genomicFeature)
+center_exp = as.data.frame(tca@clusterRes@data) %>% rownames_to_column("id")
+membership = as.data.frame(tca@clusterRes@membership) %>% rownames_to_column("id") 
+membership$membership_max <- pmax(membership$`1`, membership$`2`, membership$`3`, membership$`4`, membership$`5`, membership$`6`, membership$`7`) 
+membership<- dplyr::select(membership, "id", "membership_max")
+
+gene_info<- inner_join(cluster, membership, by = "id")
+gene_info<- inner_join(gene_info, center_exp, by = "id") 
+to_plot<- gene_info %>% pivot_longer(4:12, names_to = "time")
+to_plot$time<- factor(to_plot$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day"))
+write_tsv(to_plot, file = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/linegraph_df_plotting.tsv")
+```
+
+```{r}
+# gf_clust is a dataframe whose columns include chr, start, end, the Peak ID given by TCSeq, and the cluster assigned by the clustering algorithm of choice
+## Write bed files per cluster
+gf_clust <- inner_join(cluster, tca_clust_gf, by = "id") 
+colnames(gf_clust)<-  c("id", "cluster", "chr", "start", "end")
+
+#reorder to create bed file structure
+gf_clust <- gf_clust[, c(3, 4, 5, 2, 1)]
+```
+
+## Print region files
+save tsv of region clusters with cluster number
+```{r}
+setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/TC_seq")
+
+
+for(i in 1:7){
+i_cluster <- filter(gf_clust, cluster==i)
+write_tsv(i_cluster,file = paste("peak_subset_cluster_",i,".bed",sep=""), append = FALSE, col_names = FALSE)
+}
+## The resulting bed file needs to be sorted
+# Write gf variable to bed file. This is a list of all input peak regions after TC_seq runs a union merge
+write_tsv(tca_clust_gf, file="gf_tcseq.bed", append = FALSE, col_names = FALSE)
+write_tsv(gf_clust, file="peak_subset_dynamic.bed", append = FALSE, col_names = FALSE)
+
+static_regions <- anti_join(tca_clust_gf, gf_clust, by = "id")
+write_tsv(static_regions, file="peak_subset_static.bed", append = FALSE, col_names = FALSE)
+
+```
