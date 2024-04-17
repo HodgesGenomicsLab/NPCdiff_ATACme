@@ -1,0 +1,56 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=0:15:00
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=1
+#SBATCH --job-name="trimgalore"
+#SBATCH -o CpG_%A.out # Standard output
+#SBATCH -e CpG_%A.err # Standard error
+#SBATCH --mail-user=your.email@school.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="CpGdensity"
+#!/bin/bash
+
+# cpg_analysis.slrm: [BEDinfile] [OutfileName]
+# Input: region list with chr start and end as columns 1-3
+# Output:  ${outfile}.CpGcount.txt [chr] [start] [end] [CpG amount] 
+# Output: ${outfile}.nucOutput_gc.txt [chr] [start] [end] ​[GC%] [C#] [G#] [length] 
+
+module restore tools
+​
+# Establish variables:
+infile="$1"
+outfile="$2"
+genome=hg38.fa 
+
+#check variable assignment
+echo ${infile} ${outfile}
+
+cd /dir/to/data
+
+# Simplify the input file to just three columns:
+awk 'BEGIN{OFS=FS="\t"}{print $1,$2,$3}' $infile | bedtools sort -i - > ${outfile}.3.txt
+
+​module load GCC/8.2.0 BEDTools/2.28.0
+
+# Step 1: Expected: Use BEDtools nuc to identify the GC%, #G, #C, and length of the bed files
+bedtools nuc -fi $genome -bed ${infile} > ${outfile}.nucOutput_raw.txt
+
+#col 5 is %GC, col 7 is #Cs, col 8 is #Gs, col 12 is length of interval
+awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$5,$7,$8,$12}' ${outfile}.nucOutput_raw.txt > ${outfile}.nucOutput_gc.txt
+​
+# Step 2: Observed: Calculate the amount of CpGs in each region (row) using methpipe
+#regions need to be sorted first
+LC_ALL=C sort -k 1,1 -k 3,3n -k 2,2n -k 6,6 -o ${outfile}.sorted.bed ${infile}
+
+module load GCC/5.4.0-2.26 GSL/2.1
+#run roimethstat and extract CpG count for each region
+roimethstat -P -o ${outfile}.CpGtmp.bed ${outfile}.sorted.bed /dir/to/methdata/sample.meth
+
+awk -F ':' '{print $2}' ${outfile}.CpGtmp.bed > ${outfile}.CpGcount_tmp.txt
+
+paste <(awk '{print $1}' ${outfile}.CpGcount_tmp.txt ) <(awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3}' ${outfile}.CpGtmp.bed ) > ${outfile}.CpGcount.txt
+
+#remove intermediate files produced
+rm ${outfile}.3.txt ${outfile}.nucOutput_raw.txt ${outfile}.sorted.bed ${outfile}.CpGtmp.bed ${outfile}.CpGcount_tmp.txt
