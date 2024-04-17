@@ -15,28 +15,44 @@ library(data.table)
 library(TCseq)
 library(egg)
 
-load("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/tcseq_genrich_count_obj.Rdata")
+
+setwd("/dir/to/mapped_reads")
+Genrich_bed <- read_tsv("/dir/to/consensus.narrowPeak", 
+                        col_names = c("chr", "start", "end"),
+                        col_types = "cnn") %>% mutate("id"= paste0(chr,start,end))
+gf <- peakreference(dir = "/dir/to/", 
+                    pattern = "consensus.narrowPeak")
+                    
+ATACme_samples <- c("rep1_0", "rep2_0", "rep1_6", "rep2_6", "rep1_12", "rep2_12", "rep1_24", "rep2_24", "rep1_48", "rep2_48","rep1_72", "rep2_72", "rep1_108", "rep2_108", "rep1_6day", "rep2_6day", "rep1_12day", "rep2_12day")
+ATACme_time<- c("0hr", "0hr", "6hr", "6hr", "12hr", "12hr", "24hr", "24hr", "48hr", "48hr", "72hr", "72hr", "108hr", "108hr", "6day", "6day", "12day", "12day")
+rep <- c(1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2)
+
+setwd("/dir/to/mapped_reads")
+BAMfile <- c("NPCdiffATACme0hr_rep1.bam","NPCdiffATACme0hr_rep2.bam",
+             "NPCdiffATACme6hr_rep1.bam","NPCdiffATACme6hr_rep2.bam",
+             "NPCdiffATACme12hr_rep1.bam","NPCdiffATACme12hr_rep2.bam",
+             "NPCdiffATACme24hr_rep1.bam","NPCdiffATACme24hr_rep2.bam",
+             "NPCdiffATACme48hr_rep1.bam","NPCdiffATACme48hr_rep2.bam",
+             "NPCdiffATACme72hr_rep1.bam","NPCdiffATACme72hr_rep2.bam",
+             "NPCdiffATACme108hr_rep1.bam","NPCdiffATACme108hr_rep2.bam",
+             "NPCdiffATACme6day_rep1.bam","NPCdiffATACme6day_rep2.bam",
+             "NPCdiffATACme12day_rep1.bam","NPCdiffATACme12day_rep2.bam")
+             
+experiment <- data.frame(sampleid = ATACme_samples, timepoint = as.factor(ATACme_time), group = as.factor(rep), BAMfile = BAMfile)
+
+tca <- TCA(design = experiment, genomicFeature = Genrich_bed)
+
+BPPARAM=BiocParallel::SerialParam()
+tca <- countReads(tca, dir = "/dir/to/mapped_reads")
 NPC_t <- read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/TCseq_NPCdiff_ATAC_ExpressionTable.txt", col_names = c("peakID", "0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day"), skip = 1) %>% column_to_rownames(var = "peakID")
 
 ```
 
 TCseq performs fuzzy, c-means clustering which requires you to choose a cluster number
-to inform this decision perform a gap statistic calculation first which can be visualized
-```{r warning=FALSE}
-kmax <- 15
-wss_NPC <-sapply(1:kmax,
-                 function(k){kmeans(NPC_t, k,
-                 nstart = 50, iter.max= 15) $tot.withinss})
-```
+analyses used to inform this decision found in supp2A_B_C_TC_gap.R
 
-```{r echo= FALSE}
-plot(1:kmax, wss_NPC,
-     type="b", pch = 19, frame = FALSE, 
-     xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares")
-```
 ## Create k-means Heatmap
-visualize different cluster numbers based off the resulting gap statistic plot 
+visualize different cluster numbers based off the results
 ```{r}
 set.seed(123)
 NPC_TCseq_6cluster<- pheatmap(as.matrix(NPC_t), 
@@ -59,17 +75,15 @@ NPC_TCseq_9cluster<- pheatmap(as.matrix(NPC_t),
                              cellwidth = 30, cellheight = 15, 
                              cluster_cols=FALSE, kmeans_k = 9, 
                              scale = "row")
-ggsave(NPC_TCseq_6cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_6cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
-ggsave(NPC_TCseq_7cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_7cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
-ggsave(NPC_TCseq_8cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_8cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
-ggsave(NPC_TCseq_9cluster, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/NPC_TCseq_9cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_6cluster, filename = "/dir/to/Figures/NPC_TCseq_6cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_7cluster, filename = "/dir/to/Figures/NPC_TCseq_7cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_8cluster, filename = "/dir/to/Figures/NPC_TCseq_8cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
+ggsave(NPC_TCseq_9cluster, filename = "/dir/to/Figures/NPC_TCseq_9cluster.pdf", unit= "in", width = 8, height = 6, device = cairo_pdf)
 
 
 ```
 Cluster time course data into 7 clusters via fuzzy c-means clustering and plot the different clusters
 ```{r}
-set.seed(123)
-
 #cluster into 7 clusters
 tca <- timeclust(tca, algo = "cm", k=7, standardize = TRUE)
 
@@ -79,7 +93,7 @@ plots<- ggarrange(plots = p, ncol=2)
 
 plots
 
-ggsave(plots, filename = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/7cluster_TCseq_linegraph_2.pdf", units = "in", height = 16, width = 12, device = cairo_pdf)
+ggsave(plots, filename = "/dir/to/Figures/7cluster_TCseq_linegraph_2.pdf", units = "in", height = 16, width = 12, device = cairo_pdf)
 
 ## Make a dataframe of peaks with cluster information
 # at this point, tca is the object that resulted from calling timeclust()
@@ -94,7 +108,7 @@ gene_info<- inner_join(cluster, membership, by = "id")
 gene_info<- inner_join(gene_info, center_exp, by = "id") 
 to_plot<- gene_info %>% pivot_longer(4:12, names_to = "time")
 to_plot$time<- factor(to_plot$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day"))
-write_tsv(to_plot, file = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/linegraph_df_plotting.tsv")
+write_tsv(to_plot, file = "/dir/to/data/linegraph_df_plotting.tsv")
 ```
 
 ```{r}
@@ -110,8 +124,6 @@ gf_clust <- gf_clust[, c(3, 4, 5, 2, 1)]
 ## Print region files
 save tsv of region clusters with cluster number
 ```{r}
-setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/TC_seq")
-
 
 for(i in 1:7){
 i_cluster <- filter(gf_clust, cluster==i)
