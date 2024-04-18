@@ -1,0 +1,105 @@
+```{r message=FALSE, warning=FALSE}
+require(tidyverse)
+library(tidyverse)
+library(data.table)
+
+setwd("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/Ontology")
+
+#import files generated from GREAT browser interface
+cluster1 <- read_tsv(file = "Cluster1_greatExportAll_Bkg.tsv", skip = 3)
+cluster2 <- read_tsv(file = "Cluster2_greatExportAll_Bkg.tsv", skip = 3)
+cluster3 <- read_tsv(file = "Cluster3_greatExportAll_Bkg.tsv", skip = 3)
+cluster4 <- read_tsv(file = "Cluster4_greatExportAll_Bkg.tsv", skip = 3)
+cluster5 <- read_tsv(file = "Cluster5_greatExportAll_Bkg.tsv", skip = 3)
+cluster6 <- read_tsv(file = "Cluster6_greatExportAll_Bkg.tsv", skip = 3)
+cluster7 <- read_tsv(file = "Cluster7_greatExportAll_Bkg.tsv", skip = 3)
+
+
+listOfTables <- list("cluster 3"= cluster3, "cluster 1" = cluster1, "cluster 2"= cluster2, "cluster 6"= cluster6, "cluster 4"=cluster4, "cluster 7"= cluster7 , "cluster 5"=cluster5)
+
+GreatGODotplot <- function(listOfTables, show, title, cutoff){
+  ####### Table 1
+  # Create a main database table with IDs and percent fold change column
+  mainReferenceDBtemp <- rbindlist(listOfTables, idcol="cluster")
+  mainReferenceDBtemp$cluster <- factor(mainReferenceDBtemp$cluster, levels = unique(mainReferenceDBtemp$cluster))
+  mainReferenceDBtemp_filter <- dplyr::filter(mainReferenceDBtemp, HyperBonfP <= cutoff)
+  # Next: Find out which rows to pull for graphing: 
+  # Take first X amount of lines from tables
+  loShortTables <- lapply(listOfTables, '[', c(1:show), )
+  # Find the list of ontologies to extract
+  shortTableDF <- rbindlist(loShortTables)
+  voTermsToExtract <- unique(shortTableDF$Desc)
+  # Use the main database table to pulloutrows
+  tableToPlot <- mainReferenceDBtemp_filter[mainReferenceDBtemp_filter$Desc %in% voTermsToExtract,]
+  tableToPlot$Desc <- factor(tableToPlot$Desc,levels=rev(unique(tableToPlot$Desc)))
+  ###### Graph
+tableToPlot<- tableToPlot %>% mutate("trans_p" = -log10(HyperBonfP))
+    # Plot with GGPlot
+dotplotGO<- ggplot(tableToPlot, aes(x = cluster, y = Desc, size = RegionFoldEnrich, color = trans_p))+
+  geom_point()+
+  scale_color_gradient(low="lightgoldenrod1", high="red2")+
+  scale_y_discrete(limits=rev)+
+  ggtitle(title)+
+  theme_bw()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+dotplotGO
+
+  }
+
+plot_bkg <- GreatGODotplot(listOfTables, show=5, title = "GREAT GO Dotplot with Background", cutoff = 0.05)
+plot_bkg
+ggsave(plot_bkg, filename= "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/GREAT_Bkg_ontology_dotplot_vertical.pdf", units = "in", height = 6, width = 8, device = cairo_pdf)
+```
+```{r}
+setwd("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/Ontology")
+
+cluster1_2 <- read_tsv(file = "Cluster1_greatExportAll.tsv", skip = 3)
+cluster2_2 <- read_tsv(file = "Cluster2_greatExportAll.tsv", skip = 3)
+cluster3_2 <- read_tsv(file = "Cluster3_greatExportAll.tsv", skip = 3)
+cluster4_2 <- read_tsv(file = "Cluster4_greatExportAll.tsv", skip = 3)
+cluster5_2 <- read_tsv(file = "Cluster5_greatExportAll.tsv", skip = 3)
+cluster6_2 <- read_tsv(file = "Cluster6_greatExportAll.tsv", skip = 3)
+cluster7_2 <- read_tsv(file = "Cluster7_greatExportAll.tsv", skip = 3)
+
+
+listOfTables_2 <- list("cluster 3"= cluster3_2, "cluster 1" = cluster1_2, "cluster 2"= cluster2_2, "cluster 6"= cluster6_2, "cluster 4"=cluster4_2, "cluster 7"= cluster7_2, "cluster 5"=cluster5_2)
+plot_noBkg <- GreatGODotplot(listOfTables_2, show=5, title = "GREAT GO Dotplot without Background", cutoff = 0.005)
+plot_noBkg
+
+```
+```{r}
+setwd("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/Ontology")
+
+dynamic <- read_tsv(file = "dynamic_GREAT_noBkg.tsv", skip = 3)
+static <- read_tsv(file = "static_GREAT_noBkg.tsv", skip = 3)
+
+
+listOfTables_3 <- list("static"= static, "dynamic" = dynamic)
+static_dynamic_plot <- GreatGODotplot(listOfTables_3, show=10, title = "GREAT GO Dotplot without Background", cutoff = 0.05)
+static_dynamic_plot
+
+static_dynamic_GREAT <- rbindlist(listOfTables_3, idcol="cluster")
+static_dynamic_GREAT$cluster <- factor(static_dynamic_GREAT$cluster, levels = unique(static_dynamic_GREAT$cluster))
+static_dynamic_GREAT_filter <- filter(static_dynamic_GREAT, HyperBonfP <= 0.05)
+  # Next: Find out which rows to pull for graphing: 
+  # Take first X amount of lines from tables
+ShortTables <- lapply(listOfTables_3, '[', c(1:10), )
+  # Find the list of ontologies to extract
+st_dyn_shortTableDF <- rbindlist(ShortTables)
+st_dyn_TermsToExtract <- unique(st_dyn_shortTableDF$Desc)
+  # Use the main database table to pulloutrows
+tableToPlot <- static_dynamic_GREAT_filter[static_dynamic_GREAT_filter$Desc %in% st_dyn_TermsToExtract,]
+tableToPlot$Desc <- factor(tableToPlot$Desc,levels=rev(unique(tableToPlot$Desc)))
+  ###### Graph
+tableToPlot<- tableToPlot %>% mutate("trans_p" = -log10(HyperBonfP)) 
+    # Plot with GGPlot
+barplotGO<- ggplot(tableToPlot, aes(y = Desc, x = trans_p, group = cluster, fill = cluster))+
+  geom_bar(stat="identity")+
+  ggtitle("GREAT GO- Biological Process")+
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+  scale_fill_manual(values = c("grey50", "#992764"))
+barplotGO
+ggsave(barplotGO, filename= "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/GREAT_static_dynamic_noBkg_ontology_barplot.pdf", units = "in", height = 8, width = 10, device = cairo_pdf)
+
+```
