@@ -16,7 +16,7 @@ export LC_ALL=C
 # Loads samtools via LMOD from cluster computing environment
 module restore tools
 
-for i in 0day 4day 8day
+for i in 0day-A 0day-B 4day-A 4day-B 8day-A 8day-B
 do
 
 PROCESSED_DIR=/data/hodges_lab/6L_seq
@@ -24,6 +24,7 @@ SIZES_DIR=/data/hodges_lab/hg38_genome/hg38.chrom.sizes
 
 # Generate bigwig of methylation levels for symmetric CpGs
 awk '(NR>1)' ${PROCESSED_DIR}/${i}.dedup.duet-hmC.CG_quant.combined.bed > ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed
+
 #extract hmC column to print proportion hmC out of all reads, filter, and make bw
 awk '{ if($8 >0) { print }}' ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed | awk -v OFS='\t' '{$9 = $6 / $8}1'  > ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion.bed
 awk 'BEGIN{OFS=FS="\t"}{if ($1~/chr/ && $1!~/\_/) print}' ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion.bed > ${PROCESSED_DIR}/${i}_6L_seq_hmC_proportion_filt.bed
@@ -34,13 +35,12 @@ awk '{ if($8 >0) { print }}' ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed | awk
 awk 'BEGIN{OFS=FS="\t"}{if ($1~/chr/ && $1!~/\_/) print}' ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion.bed > ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion_filt.bed
 awk '{OFS="\t"; print $1,$2,$3,$9}' < ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion_filt.bed | wigToBigWig /dev/stdin ${SIZES_DIR} ${PROCESSED_DIR}/${i}_6L_seq_mC_proportion.bw
 
-#extract mC column to print proportion mC out of all reads, filter, and make bw
-awk '{ if($8 >0) { print }}' ${PROCESSED_DIR}/${i}_6L_seq_proportion-1.bed | awk -v OFS='\t' '{$9 = $4 / $8}1'  > ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion.bed
-awk 'BEGIN{OFS=FS="\t"}{if ($1~/chr/ && $1!~/\_/) print}' ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion.bed > ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion_filt.bed
-awk '{OFS="\t"; print $1,$2,$3,$9}' < ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion_filt.bed | wigToBigWig /dev/stdin ${SIZES_DIR} ${PROCESSED_DIR}/${i}_6L_seq_modC_proportion.bw
-
 done
 
 wiggletools mean 0hr-A_6L_seq_hmC_proportion.bw 0hr-B_6L_seq_hmC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/0hrmerge_6L_seq_hmC_proportion.bw
 wiggletools mean 4-day-A_6L_seq_hmC_proportion.bw 4-day-B_6L_seq_hmC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/4daymerge_6L_seq_hmC_proportion.bw
 wiggletools mean 8-day-A_6L_seq_hmC_proportion.bw 8-day-B_6L_seq_hmC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/8daymerge_6L_seq_hmC_proportion.bw
+
+wiggletools mean 0hr-A_6L_seq_mC_proportion.bw 0hr-B_6L_seq_mC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/0hrmerge_6L_seq_mC_proportion.bw
+wiggletools mean 4-day-A_6L_seq_mC_proportion.bw 4-day-B_6L_seq_mC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/4daymerge_6L_seq_mC_proportion.bw
+wiggletools mean 8-day-A_6L_seq_mC_proportion.bw 8-day-B_6L_seq_mC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/8daymerge_6L_seq_mC_proportion.bw
