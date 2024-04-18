@@ -1,0 +1,31 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=12:00:00
+#SBATCH --mem=64G
+#SBATCH --error=homer_cluster.error
+#SBATCH --out=homer_cluster.out
+#SBATCH --mail-user=your.email@school,edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="homer_cluster"
+
+PEAK_DIR="/data/hodges_lab/NPCdiff_ATACme/data/TC_seq"
+OUT_DIR="/data/hodges_lab/NPCdiff_ATACme/data/HOMER"
+
+cd /data/hodges_lab/NPCdiff_ATACme/data/HOMER
+
+for i in cluster_1 cluster_2 cluster_3 cluster_4 cluster_5 cluster_6 cluster_7 static
+do
+mkdir ${OUT_DIR}_${i}_allPeak
+findMotifsGenome.pl ${PEAK_DIR}/peak_subset_${i}.bed hg38 \
+        ${OUT_DIR}/${i}_allPeak -bg /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/gf_tcseq.bed \
+        -nomotif -size given -len 8,10,12,15 -p 8
+
+mkdir ${OUT_DIR}_${i}_noBkg
+findMotifsGenome.pl ${PEAK_DIR}/peak_subset_${i}.bed hg38 \
+        ${OUT_DIR}/${i}_noBkg \
+        -nomotif -size given -len 8,10,12,15 -p 8
+
+done
+
