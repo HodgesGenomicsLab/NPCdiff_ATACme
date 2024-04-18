@@ -1,0 +1,3 @@
+wiggletools mean 0hr-A_6L_seq_hmC_proportion.bw 0hr-B_6L_seq_hmC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/0hrmerge_6L_seq_hmC_proportion.bw
+wiggletools mean 4-day-A_6L_seq_hmC_proportion.bw 4-day-B_6L_seq_hmC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/4daymerge_6L_seq_hmC_proportion.bw
+wiggletools mean 8-day-A_6L_seq_hmC_proportion.bw 8-day-B_6L_seq_hmC_proportion.bw |wigToBigWig stdin /data/hodges_lab/hg38_genome/hg38.chrom.sizes /data/hodges_lab/6L_seq/data/tracks/8daymerge_6L_seq_hmC_proportion.bw
