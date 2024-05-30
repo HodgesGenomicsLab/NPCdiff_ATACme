@@ -1,0 +1,93 @@
+---
+title: "Plot MCluster Methylation"
+---
+```{r Libraries, warning=FALSE, echo=FALSE}
+require(ggplot2)
+library(tidyverse)
+library(RColorBrewer)
+library(data.table)
+library(pheatmap)
+```
+# Visualize Methylation Clusters
+the clustering of regions by methylation values was done on accre using the script hclust.R. The file that is read in here was produced from that script and contains the region ID info, the average methylation score at each timepoint, the accessibility cluster, and the methylation cluster. Regions that contained less than 0.1 methylation score at all timepoints have been filtered out as stablely methylated regions.
+```{r echo=FALSE}
+allpeak_bothClusterID <- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids.tsv")
+
+#read in cluster IDs from accre clustering, different agglomeration methods
+allpeak_bothClusterID_avgCenter <- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_avgCenter.tsv")
+allpeak_bothClusterID_avg<- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_avg.tsv")
+allpeak_bothClusterID_comCenter <- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_comCenter.tsv")
+allpeak_bothClusterID_com<- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_com.tsv")
+allpeak_bothClusterID_wardCenter <- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_wardCenter.tsv")
+allpeak_bothClusterID_ward<- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_ward.tsv")
+allpeak_bothClusterID_ward9<- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_ward9.tsv")
+
+
+#read in non-centered methylation data so the clusters can be visualized 
+allpeak_roiMeth<- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/allTime_allPeak_roiMeth.tsv")
+
+```
+## Plot average methylation across times (not centered)
+use assingments from centered clustering but merge with roi avg methylation 
+```{r}
+cluster_avgMeth <- function(clusterType,basename){
+  setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures")
+  
+  avgMeth_ID <- inner_join(clusterType, allpeak_roiMeth, by = c("chr", "start", "end")) %>% select("chr", "start", "end", "0hr" = "0hr.y", "6hr"="6hr.y",  "12hr" = "12hr.y", "24hr"="24hr.y", "48hr"="48hr.y", "72hr"= "72hr.y", "108hr"= "108hr.y", "6day"="6day.y", "12day"="12day.y", "acc_cluster", "meth_cluster")
+  count<- dplyr::count(avgMeth_ID, meth_cluster)
+  
+  avgMeth_ID_long <- avgMeth_ID %>% pivot_longer(4:12, names_to = "time", values_to = "per_meth")
+  avgMeth_ID_long$time <- factor(avgMeth_ID_long$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")) 
+  avgMeth_ID_long$meth_cluster <- factor(avgMeth_ID_long$meth_cluster, levels = c(1,2,3,4,5,6,7,8,9,10)) 
+  
+  plot<- ggplot(avgMeth_ID_long, aes(x=time, y=per_meth)) +
+    geom_boxplot(outlier.colour = "grey65", aes(fill=meth_cluster), position=position_dodge(0.60), width=0.4)+
+    facet_wrap(~meth_cluster, ncol=9)+
+    xlab("Time (hrs)")+
+    ylab("Average Methylation")+
+    ggtitle(paste0("DNA Methylation by Cluster"))+
+    scale_color_brewer(palette= "Set3")+
+    scale_fill_brewer(palette= "Set3")+
+    theme_minimal()
+  ggsave(plot, file = paste0(basename,"_boxplot.pdf"), units = "in", width = 8, height = 12)
+
+  return(list(count, plot))
+}
+
+avgCenter<- cluster_avgMeth(allpeak_bothClusterID_avgCenter, "allpeak_methClusterID_avgCenter")
+comCenter<- cluster_avgMeth(allpeak_bothClusterID_comCenter, "allpeak_methClusterID_comCenter")
+wardCenter<- cluster_avgMeth(allpeak_bothClusterID_wardCenter, "allpeak_methClusterID_wardCenter")
+
+avg<- cluster_avgMeth(allpeak_bothClusterID_avg, "allpeak_methClusterID_avg")
+com<- cluster_avgMeth(allpeak_bothClusterID_com, "allpeak_methClusterID_com")
+ward<- cluster_avgMeth(allpeak_bothClusterID_ward, "allpeak_methClusterID_ward")
+ward9<- cluster_avgMeth(allpeak_bothClusterID_ward9, "allpeak_methClusterID_ward9")
+
+```
+```{r}
+cluster_avgMeth_violin <- function(clusterType,basename){
+  setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures")
+  
+  avgMeth_ID <- inner_join(clusterType, allpeak_roiMeth, by = c("chr", "start", "end")) %>% select("chr", "start", "end", "0hr" = "0hr.y", "6hr"="6hr.y",  "12hr" = "12hr.y", "24hr"="24hr.y", "48hr"="48hr.y", "72hr"= "72hr.y", "108hr"= "108hr.y", "6day"="6day.y", "12day"="12day.y", "acc_cluster", "meth_cluster")
+  count<- dplyr::count(avgMeth_ID, meth_cluster)
+  
+  avgMeth_ID_long <- avgMeth_ID %>% pivot_longer(4:12, names_to = "time", values_to = "per_meth")
+  avgMeth_ID_long$time <- factor(avgMeth_ID_long$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")) 
+  avgMeth_ID_long$meth_cluster <- factor(avgMeth_ID_long$meth_cluster, levels = c(1,2,3,4,5,6,7,8,9,10)) 
+  
+  plot<- ggplot(avgMeth_ID_long, aes(x=time, y=per_meth)) +
+    geom_violin(aes(fill=meth_cluster), position=position_dodge(0.60), width=0.6)+
+    facet_wrap(~meth_cluster, ncol=3)+
+    xlab("Time (hrs)")+
+    ylab("Average Methylation")+
+    ggtitle(paste0("DNA Methylation by Cluster"))+
+    scale_color_brewer(palette= "Set3")+
+    scale_fill_brewer(palette= "Set3")+
+    theme_minimal()
+  ggsave(plot, file = paste0(basename,"_violin.pdf"), units = "in", width = 10, height = 12)
+
+  return(list(count, plot))
+}
+ward9_violin<- cluster_avgMeth_violin(allpeak_bothClusterID_ward9, "allpeak_methClusterID_ward9_long")
+ward9_violin
+```
