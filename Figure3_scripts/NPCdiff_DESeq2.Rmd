@@ -1,1 +1,131 @@
+---
+title: DESeq2 for Differential Expression 
+---
+```{r warning=FALSE, echo=FALSE, message=FALSE}
+library("tidyverse")
+library("DESeq2")
+library("ggplot2")
+library( "genefilter" )
+library("pheatmap")
+library("cluster")
+library("factoextra")
+library("RColorBrewer")
+library(viridis)
+```
+```{r}
+setwd("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2")
+#read in the feature counts file, this is generated on ACCRE following preprocessing  
+counts <- read.delim(file = "NPCdiff_notrim_SubreadCounts.txt", skip = 1,col.names = c("geneID", "Chr", "Start", "End", "Strand", "Length", "NPC_0hr_1", "NPC_0hr_2", "NPC_108hr_1", "NPC_108hr_2", "NPC_12d_1", "NPC_12d_2", "NPC_12hr_1", "NPC_12hr_2", "NPC_24hr_1", "NPC_24hr_2", "NPC_48hr_1", "NPC_48hr_2", "NPC_6d_1", "NPC_6d_2", "NPC_6hr_1", "NPC_6hr_2", "NPC_72hr_1", "NPC_72hr_2"),row.names = "geneID")  %>%
+    dplyr::select("NPC_0hr_1", "NPC_0hr_2", "NPC_108hr_1", "NPC_108hr_2", "NPC_12d_1", "NPC_12d_2", "NPC_12hr_1", "NPC_12hr_2", "NPC_24hr_1", "NPC_24hr_2", "NPC_48hr_1", "NPC_48hr_2", "NPC_6d_1", "NPC_6d_2", "NPC_6hr_1", "NPC_6hr_2", "NPC_72hr_1", "NPC_72hr_2")
 
+#creating a coldata table for the DESeq matrix, supplies experimental data for samples, replicates, etc.
+samples <- c("NPC_0hr_1", "NPC_0hr_2", "NPC_108hr_1", "NPC_108hr_2", "NPC_12d_1", "NPC_12d_2", "NPC_12hr_1", "NPC_12hr_2", "NPC_24hr_1", "NPC_24hr_2", "NPC_48hr_1", "NPC_48hr_2", "NPC_6d_1", "NPC_6d_2", "NPC_6hr_1", "NPC_6hr_2", "NPC_72hr_1", "NPC_72hr_2") 
+replicate<- c("1", "2","1", "2","1", "2","1", "2","1", "2","1", "2","1", "2","1", "2","1", "2")
+time <- c("0hr", "0hr", "108hr", "108hr", "12d", "12d", "12hr", "12hr", "24hr", "24hr", "48hr", "48hr", "6d", "6d", "6hr", "6hr", "72hr","72hr")
+search_counts <- rownames_to_column(counts, var = "ensembl" )
+
+#values need to be in factor format for DESeq
+time<- factor(time, levels = c("0hr" ,"6hr", "12hr", "24hr", "48hr", "72hr", "108hr", "6d", "12d"))
+replicate <- as.factor(replicate)
+
+coldata<- data.frame(replicate, time)
+row.names(coldata) <- samples
+
+#creating DESeq object
+#to avoid model matrix is not full rank error can only consider the treatment variable in the design
+dds <- DESeqDataSetFromMatrix(countData= counts,
+                                   colData= coldata,
+                                   design= ~ time)
+#differential expression analysis
+dds <- DESeq(dds)
+#to see what comparisons were made, the factor designation supplied above impacts the comparisons
+#results dataframes from next section are subset using these contrasts
+resultsNames(dds)
+
+#filtering the counts so to eliminates genes that had no reads map to them
+counts_filtered <- rowSums(counts(dds)) > 10
+dds <- dds[counts_filtered,] 
+#save dds file 
+save(dds, file = "NPCdiff_dds.Rdata")
+```
+```{r}
+#saving the dds file allows you to do further analysis without performing the differential analysis again which can be time consuming
+load("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/NPCdiff_dds.Rdata")
+
+#extracting genes that are differentially expressed between different time points and filtering for significance
+res_0vs6hr<- results(dds, name="time_6hr_vs_0hr") #variable name, numerator, denominator
+res_0vs6hr_df <- as.data.frame(res_0vs6hr) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs6hr_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_6hr_padj0_005.tsv")
+
+res_0vs12hr<- results(dds, name= "time_12hr_vs_0hr") #variable name, numerator, denominator
+res_0vs12hr_df <- as.data.frame(res_0vs12hr) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs12hr_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_12hr_padj0_005.tsv")
+
+res_0vs24hr<- results(dds, name= "time_24hr_vs_0hr") #variable name, numerator, denominator
+res_0vs24hr_df <- as.data.frame(res_0vs24hr) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs24hr_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_24hr_padj0_005.tsv")
+
+res_0vs48hr<- results(dds, name= "time_48hr_vs_0hr") #variable name, numerator, denominator
+res_0vs48hr_df <- as.data.frame(res_0vs48hr) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs48hr_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_48hr_padj0_005.tsv")
+
+res_0vs72hr<- results(dds, name= "time_72hr_vs_0hr") #variable name, numerator, denominator
+res_0vs72hr_df <- as.data.frame(res_0vs72hr) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs72hr_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_72hr_padj0_005.tsv")
+
+res_0vs108hr<- results(dds, name= "time_108hr_vs_0hr") #variable name, numerator, denominator
+res_0vs108hr_df <- as.data.frame(res_0vs108hr) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs108hr_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_108hr_padj0_005.tsv")
+
+res_0vs6d<- results(dds, name= "time_6d_vs_0hr") #variable name, numerator, denominator
+res_0vs6d_df <- as.data.frame(res_0vs6d) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs6d_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_6d_padj0_005.tsv")
+
+res_0vs12d<- results(dds, name= "time_12d_vs_0hr") #variable name, numerator, denominator
+res_0vs12d_df <- as.data.frame(res_0vs12d) %>% rownames_to_column(var = "ENSEMBL") %>% filter(padj <= 0.005)
+write_tsv(res_0vs12d_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/res_0_12d_padj0_005.tsv")
+
+#rank genes by their log2foldchange between the 0 hour and next timepoint 
+res_0vs6hr_df_rank <- slice_max(res_0vs6hr_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs12hr_df_rank <- slice_max(res_0vs12hr_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs24hr_df_rank <- slice_max(res_0vs24hr_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs48hr_df_rank <- slice_max(res_0vs48hr_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs72hr_df_rank <- slice_max(res_0vs72hr_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs108hr_df_rank <- slice_max(res_0vs108hr_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs6d_df_rank <- slice_max(res_0vs6d_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+res_0vs12d_df_rank <- slice_max(res_0vs12d_df, order_by = (abs(log2FoldChange)), prop= 0.25)
+
+#bind all the above data frames to get a list of genes which change the most over the timecourse
+res_rank_top0.25<- rbind(res_0vs6hr_df_rank,res_0vs12hr_df_rank,res_0vs24hr_df_rank,res_0vs48hr_df_rank,res_0vs72hr_df_rank,res_0vs108hr_df_rank,res_0vs6d_df_rank,res_0vs12d_df_rank)
+
+write_tsv(res_rank_top0.25, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/allContrast_res_rank_top0.25.tsv")
+write_tsv(as.data.frame(res_rank_top0.25$ENSEMBL), "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/allContrast_res_rank_top0.25_genelist.tsv")
+# normalize and transform counts data
+```{r}
+rld <- rlog(dds, blind=FALSE)
+rlog_df <- as.data.frame(assay(rld)) %>% rownames_to_column(var = "ENSEMBL")
+
+#save rlog transformed count matrix
+write_tsv(rlog_df, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/rlog_DESeq2_counts.tsv")
+
+normalized_counts <- counts(dds, normalized=TRUE)
+normalized_counts <- as.data.frame(normalized_counts) %>% rownames_to_column(var = "ENSEMBL")
+write_tsv(normalized_counts, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/DESeq2_normalized_counts.tsv")
+
+```
+```{r}
+#try another method of subsetting the most variable genes
+normalized_counts_vars<- normalized_counts %>% column_to_rownames(var= "ENSEMBL") 
+normalized_counts_vars <- normalized_counts_vars %>% mutate(vars= rowVars(as.matrix(normalized_counts_vars)))
+normalized_counts_top_vars <- slice_max(normalized_counts_vars, order_by = vars, prop= 0.25) %>% rownames_to_column(var= "ENSEMBL")
+
+write_tsv(normalized_counts_top_vars, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/normalizedCounts_rowVars_top0.25.tsv")
+write_tsv(as.data.frame(normalized_counts_top_vars$ENSEMBL), "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/normalizedCounts_rowVars_top0.25_genelist.tsv")
+
+rlog_vars<- mutate(rlog_df, vars=(rowVars(assay(rld))))
+rlog_top_vars <- slice_max(rlog_vars, order_by = vars, prop= 0.25)
+
+write_tsv(rlog_top_vars, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/rlog_rowVars_top0.25.tsv")
+write_tsv(as.data.frame(rlog_top_vars$ENSEMBL), "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/rlog_rowVars_top0.25_genelist.tsv")
+
+```
