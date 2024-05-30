@@ -1,0 +1,70 @@
+---
+title: Center and Integrate Accessibility with Methylation
+---
+## Integrate Accessibility and DNA Methylation Data
+# Prep Files
+
+```{r Libraries, warning=FALSE, message=FALSE}
+require(ggplot2)
+library(tidyverse)
+library(RColorBrewer)
+library(data.table)
+
+scale_rows = function(matrix){
+  sd= as.numeric(apply(matrix, 1, sd))
+  mean= as.numeric(apply(matrix, 1, mean))
+  zscore<- function(x){
+    (x-mean)/sd
+    }
+  matrix<-transmute_all(matrix, zscore)
+  matrix
+}
+```
+read in the cluster bed files generated from TCseq
+
+```{r warning=FALSE}
+setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq")
+
+dynamic_regions <-read_tsv(file = "peak_subset_dynamic.bed", col_names = c("chr" ,"start", "end", "cluster","peakID"), col_type = "cnnnc")
+
+cluster_regions <- list("peak_subset_cluster_1.bed", "peak_subset_cluster_2.bed", "peak_subset_cluster_3.bed", "peak_subset_cluster_4.bed", "peak_subset_cluster_5.bed", "peak_subset_cluster_6.bed", "peak_subset_cluster_7.bed")
+
+read <- function(file){
+  peak <- read_tsv(file = file, col_names = c("chr" ,"start", "end", "cluster","peakID"), col_type = "cnnnc")
+}
+
+peaks <- lapply(cluster_regions, read)
+#bind all cluster files to create a dynamic region list which can then be saved 
+#to generate a static region list, take all the regions (saved under gf_tcseq.bed) and remove the dynamic regions  
+#those peaks that were not assigned to clusters didn't change meaningfully over the timecourse and are termed static regions
+
+```
+# Standardize Accessibility data
+counts table (NPC_t) was produced from TC_seq.R on ACCRE
+```{r message=FALSE}
+NPC_t <- read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/TCseq_NPCdiff_ATAC_ExpressionTable.txt", col_names = c("peakID", "0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day"), skip = 1)
+
+
+#select relevant columns and rename
+dynamic_counts_matrix <- inner_join(NPC_t, dynamic_regions, by = "peakID") %>% select("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+
+dynamic_counts_table_id <- inner_join(NPC_t, dynamic_regions, by = "peakID") %>% select("chr", "start", "end", "cluster")
+
+scale_rows = function(matrix){
+  sd= as.numeric(apply(matrix, 1, sd))
+  mean= as.numeric(apply(matrix, 1, mean))
+  zscore<- function(x){
+    (x-mean)/sd
+    }
+  matrix<-transmute_all(matrix, zscore)
+  colnames(matrix) <- c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+  matrix
+}
+
+dynamic_counts_matrix_center <- scale_rows(dynamic_counts_matrix) 
+
+dynamic_counts_matrix_center_id <- bind_cols(dynamic_counts_table_id, dynamic_counts_matrix_center)
+
+dynamic_counts_matrix_center_id_long <- tidyr::pivot_longer(dynamic_counts_matrix_center_id, names_to = "Time", values_to = "acc_stand", 5:13)
+
+write_tsv(as.data.frame(dynamic_counts_matrix_center_id_long), file ="~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_Acc_counts_dynamicClusters.tsv")
