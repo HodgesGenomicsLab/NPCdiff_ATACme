@@ -1,0 +1,36 @@
+---
+title: "5hmC Flow Cytometry Quantification"
+---
+```{r Libraries, warning=FALSE, echo=FALSE}
+require(ggplot2)
+library(tidyverse)
+library(RColorBrewer)
+library(data.table)
+library(MetBrewer)
+```
+
+```{r}
+data <- read_csv("/Users/lindsey/Dropbox\ (VU\ Basic\ Sciences)/Hodges\ Lab/Results\ and\ Data/Flow\ Cytometry\ Data/Lindsey/arcsinh_analysis/5hmCmedian_BrdU+_R.csv", col_names = c("date", "timepoint", "treatment", "population", "sampleid", "median_signal")) %>% select(1:6) %>% mutate(arcsinh = asinh(median_signal)) 
+#%>% filter(date != "9-May" & date != "9-May b" & date != "1-Jun")
+data$timepoint <- factor(data$timepoint, levels = c("esc", "4.5 day", "8 day"))
+data$population <- factor(data$population, levels = c("all", "BrdU+", "G1", "S", "G2-M"))
+
+```
+```{r}
+DMSOcellcycle_data <- filter(data, treatment == "DMSO") %>% group_by(date, timepoint) %>% mutate(trans_ratio = arcsinh- min(arcsinh))
+
+DMSOcellcycle_boxplot <- ggplot(filter(DMSOcellcycle_data, treatment == "DMSO"), aes(x = timepoint, y = trans_ratio))+
+  geom_boxplot(aes(fill = timepoint, color = timepoint, alpha = population))+
+  geom_point(position=position_dodge(width=.75), aes(color = timepoint, group = population))+
+  scale_fill_manual(values= c("#17154f", "#b0799a", "#e69b00"))+
+  scale_color_manual(values=c("#17154f", "#b0799a", "#e69b00"))+
+  scale_alpha_discrete(range = c(0, 0.75))+
+  theme_minimal()
+DMSOcellcycle_boxplot
+
+res_aov <- aov(trans_ratio ~ population+timepoint,
+  data = (filter(DMSOcellcycle_data, treatment == "DMSO"))
+)
+
+summary(res_aov)
+```
