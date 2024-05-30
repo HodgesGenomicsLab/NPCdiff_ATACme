@@ -1,0 +1,58 @@
+---
+title: Plot Accessibility and DNA Methylation
+---
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(data.table)
+library(egg)
+
+acc<- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/TCseq_NPCdiff_ATAC_ExpressionTable_allPeak.txt", col_names = c("peak","0hr", "6hr", "12hr", "24hr", "48hr", "72hr", "108hr", "6day", "12day"), skip = 1) 
+peakID <- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/gf_tcseq.bed", col_names = c("chr", "start", "end", "peak")) 
+acc<- inner_join(peakID, acc) %>% dplyr::select(-peak)
+cluster<- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/FINAL_cluster_assignments.tsv") %>% dplyr::select(1:5)
+acc_2<- inner_join(cluster, acc, by = c("chr", "start", "end")) %>% mutate(peakID=paste0(chr,".",start,".",end)) %>% pivot_longer(6:14, names_to = "time", values_to = "acc")
+
+```
+## Combine Accessibility and roi level Methylation not centered
+
+```{r}
+roi_meth <- read_tsv(file ="~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/allTime_allPeak_roiMeth.tsv") %>% mutate(peakID=paste0(chr,".",start,".",end)) %>% pivot_longer(4:12, names_to = "time", values_to = "meth")
+
+combined_table_1 <- inner_join(acc_2, roi_meth, by = c("peakID", "time", "chr", "start", "end"))
+#write_tsv(combined_table, file ="~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/allTime_allPeak_combined_forDualAxis.tsv")
+
+roi_ATAC_table_nc <- combined_table_1 %>% mutate(acc_2 = log2(acc+1)/7.5) %>% dplyr::select("acc_cluster", "time", "Value" = "acc_2")
+roi_ATAC_table_nc$Type <- "log2(ATAC)"
+roi_ATAC_table_nc$time <- factor(roi_ATAC_table_nc$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr", "72hr", "108hr", "6day", "12day"))
+
+roi_Meth_table_nc <- dplyr::select(combined_table_1, c("acc_cluster", "time", "Value"= "meth"))
+roi_Meth_table_nc$Type <- "Meth"
+roi_Meth_table_nc$time <- factor(roi_Meth_table_nc$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr", "72hr", "108hr", "6day", "12day"))
+
+# Bind tables together
+combined_table<- rbind(roi_ATAC_table_nc, roi_Meth_table_nc)
+
+combined_table$time <- factor(combined_table$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr", "72hr", "108hr", "6day", "12day"))
+```
+```{r}
+
+plot<- ggplot(combined_table, aes(x=time, y=Value, alpha= 0.5)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.5)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  facet_wrap(~acc_cluster, nrow = 3)+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Accessibility and DNA Methylation"))+
+  scale_color_manual(values = c("navy","goldenrod2"))+
+  scale_fill_manual(values = c("navy","goldenrod2"))+
+    scale_y_continuous(
+    limits = c(0,1),
+    # Features of the first axis
+    name = "Proportion Methylation",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*7.5, name="log2(Accessibility+1)"))+
+  theme_minimal()
+plot
+ggsave(plot, file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/Acc_roi_Meth_boxplots_all_clusters_dualAxes.pdf", device=cairo_pdf, units = "in", width = 12, height = 8)
+```
