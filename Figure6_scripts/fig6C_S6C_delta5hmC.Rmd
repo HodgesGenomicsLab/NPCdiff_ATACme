@@ -1,0 +1,104 @@
+```{r, load libraries, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(data.table)
+library(RColorBrewer)
+library(MetBrewer)
+library(plotly)
+```
+```{r}
+setwd("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data")
+
+dyn_modC_8dayA<- read_tsv("6l_seq/dynamic_8day_A_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "cluster", "peakID")) %>% mutate(p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+dyn_modC_8dayB<- read_tsv("6l_seq/dynamic_8day_B_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "cluster", "peakID")) %>% mutate(p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )   
+
+dyn_modC_4dayA<- read_tsv("6l_seq/dynamic_4day_A_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "cluster", "peakID")) %>% mutate(p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+dyn_modC_4dayB<- read_tsv("6l_seq/dynamic_4day_B_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "cluster", "peakID")) %>% mutate(p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+
+dyn_modC_0dayA<- read_tsv("6l_seq/dynamic_0hr_A_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "cluster", "peakID")) %>% mutate(p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+dyn_modC_0dayB<- read_tsv("6l_seq/dynamic_0hr_B_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "cluster", "peakID")) %>% mutate(p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+
+stat_modC_8dayA<- read_tsv("6l_seq/static_8day_A_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "peakID")) %>% mutate(cluster = "static", p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+stat_modC_8dayB<- read_tsv("6l_seq/static_8day_B_intersect.bed",col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "peakID")) %>% mutate(cluster = "static", p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+
+stat_modC_4dayA<- read_tsv("6l_seq/static_4day_A_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "peakID")) %>% mutate(cluster = "static", p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+stat_modC_4dayB<- read_tsv("6l_seq/static_4day_B_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "peakID")) %>% mutate(cluster = "static", p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = num_C/num_total) %>% filter(num_total >5 )
+
+stat_modC_0dayA<- read_tsv("6l_seq/static_0hr_A_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "peakID")) %>% mutate(cluster = "static", p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = num_C/num_total) %>% filter(num_total >5 )
+stat_modC_0dayB<- read_tsv("6l_seq/static_0hr_B_intersect.bed", col_names = c("chr", "start", "end", "strand", "num_mC", "num_hmC", "num_C", "context", "tri_context", "num_total", "region_chr", "region_start", "region_end", "peakID")) %>% mutate(cluster = "static", p_hmC = num_hmC/num_total, p_mC = num_mC/num_total, p_unmodC = (num_C)/num_total) %>% filter(num_total >5 )
+
+#read in peak cluster IDs
+dynamic_peaks<- read_tsv("TC_seq/peak_subset_dynamic.bed", col_names = c("region_chr", "region_start", "region_end", "cluster", "peakID"))
+static_peaks<- read_tsv("TC_seq/peak_subset_static.bed", col_names = c("region_chr", "region_start", "region_end", "peakID")) %>% mutate("cluster" = "static") %>% select(1:3,5,4)
+
+#join modC data with peak ID
+dyn_modC_0day<- inner_join(dyn_modC_0dayA, dyn_modC_0dayB, by= c("chr", "start", "end", "cluster", "peakID", "region_chr", "region_start", "region_end")) %>% select("chr", "start", "end", "region_chr", "region_start", "region_end","p_hmCA"="p_hmC.x", "p_mCA"="p_mC.x","p_unmodCA"="p_unmodC.x", "p_hmCB"="p_hmC.y", "p_mCB"="p_mC.y","p_unmodCB"="p_unmodC.y", "cluster", "peakID") %>% mutate(avg_phmC = (p_hmCA+p_hmCB)/2, avg_pmC = (p_mCA+p_mCB)/2, avg_punmodC = (p_unmodCA+p_unmodCB)/2)
+dyn_modC_4day<- inner_join(dyn_modC_4dayA, dyn_modC_4dayB, by= c("chr", "start", "end", "cluster", "peakID", "region_chr", "region_start", "region_end")) %>% select("chr", "start", "end", "region_chr", "region_start", "region_end","p_hmCA"="p_hmC.x", "p_mCA"="p_mC.x","p_unmodCA"="p_unmodC.x", "p_hmCB"="p_hmC.y", "p_mCB"="p_mC.y","p_unmodCB"="p_unmodC.y", "cluster", "peakID") %>% mutate(avg_phmC = (p_hmCA+p_hmCB)/2, avg_pmC = (p_mCA+p_mCB)/2, avg_punmodC = (p_unmodCA+p_unmodCB)/2)
+dyn_modC_8day<- inner_join(dyn_modC_8dayA, dyn_modC_8dayB, by= c("chr", "start", "end", "cluster", "peakID", "region_chr", "region_start", "region_end")) %>% select("chr", "start", "end", "region_chr", "region_start", "region_end","p_hmCA"="p_hmC.x", "p_mCA"="p_mC.x","p_unmodCA"="p_unmodC.x", "p_hmCB"="p_hmC.y", "p_mCB"="p_mC.y","p_unmodCB"="p_unmodC.y", "cluster", "peakID") %>% mutate(avg_phmC = (p_hmCA+p_hmCB)/2, avg_pmC = (p_mCA+p_mCB)/2, avg_punmodC = (p_unmodCA+p_unmodCB)/2)
+
+stat_modC_0day <- inner_join(stat_modC_0dayA, stat_modC_0dayB, by= c("chr", "start", "end", "cluster", "peakID", "region_chr", "region_start", "region_end")) %>% select("chr", "start", "end", "region_chr", "region_start", "region_end","p_hmCA"="p_hmC.x", "p_mCA"="p_mC.x","p_unmodCA"="p_unmodC.x", "p_hmCB"="p_hmC.y", "p_mCB"="p_mC.y","p_unmodCB"="p_unmodC.y", "cluster", "peakID") %>% mutate(avg_phmC = (p_hmCA+p_hmCB)/2, avg_pmC = (p_mCA+p_mCB)/2, avg_punmodC = (p_unmodCA+p_unmodCB)/2)
+stat_modC_4day <- inner_join(stat_modC_4dayA, stat_modC_4dayB, by= c("chr", "start", "end", "cluster", "peakID", "region_chr", "region_start", "region_end")) %>% select("chr", "start", "end", "region_chr", "region_start", "region_end","p_hmCA"="p_hmC.x", "p_mCA"="p_mC.x","p_unmodCA"="p_unmodC.x", "p_hmCB"="p_hmC.y", "p_mCB"="p_mC.y","p_unmodCB"="p_unmodC.y", "cluster", "peakID") %>% mutate(avg_phmC = (p_hmCA+p_hmCB)/2, avg_pmC = (p_mCA+p_mCB)/2, avg_punmodC = (p_unmodCA+p_unmodCB)/2)
+stat_modC_8day <- inner_join(stat_modC_8dayA, stat_modC_8dayB, by= c("chr", "start", "end", "cluster", "peakID", "region_chr", "region_start", "region_end")) %>% select("chr", "start", "end", "region_chr", "region_start", "region_end","p_hmCA"="p_hmC.x", "p_mCA"="p_mC.x","p_unmodCA"="p_unmodC.x", "p_hmCB"="p_hmC.y", "p_mCB"="p_mC.y","p_unmodCB"="p_unmodC.y", "cluster", "peakID") %>% mutate(avg_phmC = (p_hmCA+p_hmCB)/2, avg_pmC = (p_mCA+p_mCB)/2, avg_punmodC = (p_unmodCA+p_unmodCB)/2)
+
+
+peaks<- rbind(dynamic_peaks, static_peaks)
+modC_0day<- rbind(stat_modC_0day, dyn_modC_0day) %>% mutate(time = "0day")
+modC_4day<- rbind(stat_modC_4day, dyn_modC_4day)%>% mutate(time = "4day")
+modC_8day<- rbind(stat_modC_8day, dyn_modC_8day)%>% mutate(time = "8day")
+
+write_tsv(modC_0day, "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/6l_seq/modC_0day_data.tsv")
+write_tsv(modC_4day, "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/6l_seq/modC_4day_data.tsv")
+write_tsv(modC_8day, "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/6l_seq/modC_8day_data.tsv")
+
+```
+#find average modC values across each peak region 
+```{r}
+modC_0day_region<- modC_0day %>% group_by(peakID, cluster) %>% summarise(reg_mCA= mean(p_mCA), reg_hmCA = mean(p_hmCA), reg_unmodCA = mean(p_unmodCA), reg_mCB= mean(p_mCB), reg_hmCB = mean(p_hmCB), reg_unmodCB = mean(p_unmodCB)) %>% mutate(reg_avg_mC = (reg_mCA+reg_mCB)/2, reg_avg_hmC = (reg_hmCA+reg_hmCB)/2, reg_avg_unmodC = (reg_unmodCA+reg_unmodCB)/2, time = "0day")
+modC_4day_region<- modC_4day %>% group_by(peakID, cluster) %>% summarise(reg_mCA= mean(p_mCA), reg_hmCA = mean(p_hmCA), reg_unmodCA = mean(p_unmodCA), reg_mCB= mean(p_mCB), reg_hmCB = mean(p_hmCB), reg_unmodCB = mean(p_unmodCB)) %>% mutate(reg_avg_mC = (reg_mCA+reg_mCB)/2, reg_avg_hmC = (reg_hmCA+reg_hmCB)/2, reg_avg_unmodC = (reg_unmodCA+reg_unmodCB)/2, time = "4day")
+modC_8day_region<- modC_8day %>% group_by(peakID,cluster) %>% summarise(reg_mCA= mean(p_mCA), reg_hmCA = mean(p_hmCA), reg_unmodCA = mean(p_unmodCA), reg_mCB= mean(p_mCB), reg_hmCB = mean(p_hmCB), reg_unmodCB = mean(p_unmodCB)) %>% mutate(reg_avg_mC = (reg_mCA+reg_mCB)/2, reg_avg_hmC = (reg_hmCA+reg_hmCB)/2, reg_avg_unmodC = (reg_unmodCA+reg_unmodCB)/2, time = "8day")
+
+modC_cluster<- rbind(modC_0day_region, modC_4day_region, modC_8day_region)
+hmC_cluster<- pivot_wider(modC_cluster, id_cols = c(peakID, cluster), names_from = time, values_from = reg_avg_hmC)
+mC_cluster<- pivot_wider(modC_cluster, id_cols = c(peakID, cluster), names_from = time, values_from = reg_avg_mC)
+
+allmod_cluster<- pivot_longer(modC_cluster, names_to = "mod", values_to = "avg_signal", cols = c(reg_avg_mC, reg_avg_hmC, reg_avg_unmodC))
+
+write_tsv(modC_cluster, "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/6l_seq/modC_6L_data.tsv")
+
+```
+```{r}
+acc<- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/TCseq_NPCdiff_ATAC_ExpressionTable_allPeak.txt", col_names = c("peak","0hr", "6hr", "12hr", "24hr", "48hr", "72hr", "108hr", "6day", "12day"), skip = 1) 
+cluster<- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/allPeak_annotation_dataframe.tsv") %>% select(1:3,7,8,23)
+acc2<- inner_join(cluster, acc, by = c("peakID" = "peak")) %>% pivot_longer(7:15, names_to = "time", values_to = "acc")
+acc2$time <-str_replace(acc2$time,"0hr", "0")
+acc2$time <-str_replace(acc2$time,"108hr", "96")
+acc2$time <-str_replace(acc2$time,"6day", "192")
+prep_acc<- acc2 %>% filter(annotation != "Promoter (<=1kb)" & annotation != "Promoter (1-2kb") %>% select(peakID, acc, time, "cluster" = acc_cluster, annotation)
+
+modC_cluster$time <- str_replace(modC_cluster$time,"0day", "0")
+modC_cluster$time <- str_replace(modC_cluster$time,"4day", "96")
+modC_cluster$time <- str_replace(modC_cluster$time,"8day", "192")
+prep_hmC<- modC_cluster %>% select(peakID, "hmC" = reg_avg_hmC, time, cluster)%>% mutate(type = "hmC")
+
+combined<- inner_join(prep_hmC, prep_acc, by = c("peakID", "time", "cluster")) 
+
+combined$cluster <- replace_na(combined$cluster, "static") 
+
+combined$time <- factor(combined$time, levels = c(0,6,12,24,48,72,96,108,144,192,288))
+combined$cluster<- factor(combined$cluster, levels = c(3,1,2,6,4,7,5, "static"))
+```
+```{r}
+hmc_w<- combined %>% select(-acc) %>% pivot_wider(values_from = hmC, names_from = time) %>% ungroup() %>% drop_na() %>% mutate(dh_0_96 = `96`- `0`, dh_96_192 = `192`-`96`, dh_0_192 = `192`- `0`) 
+hmc_l<- hmc_w %>% pivot_longer(cols = 8:10, names_to = "time") %>% group_by(cluster, time) %>% summarise(avg = mean(value))
+acc_w<- combined %>% select(-hmC) %>% pivot_wider(values_from = acc, names_from = time) %>% ungroup() %>% drop_na() %>% mutate(da_0_96 = log2(`96`)- log2(`0`), da_96_192 = log2(`192`)-log2(`96`), da_0_192 = log2(`192`)- log2(`0`)) 
+both_w<- inner_join(acc_w, hmc_w, by = c("peakID", "cluster", "annotation")) %>% select(peakID, cluster, da_0_192, `0`=`0.y`,`96`=`96.y`,`192`=`192.y`)%>% pivot_longer(cols = 4:6, names_to = "time")
+
+delta_bar<- ggplot(hmc_l, aes(x = time, y = avg, fill = cluster,alpha = 0.8))+
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Paired") +
+  facet_wrap(~cluster)+
+  theme_minimal()
+delta_bar
+
+ggsave(delta_bar, filename= "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/hmC_delta_byCluster.pdf", units = "in", width = 6, height = 5)
+
+```
