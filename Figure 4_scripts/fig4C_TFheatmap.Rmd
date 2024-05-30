@@ -1,0 +1,47 @@
+---
+title: DESeq2 for Differential TF Expression 
+---
+```{r warning=FALSE, echo=FALSE, message=FALSE}
+library("tidyverse")
+library("ggplot2")
+library("genefilter")
+library("pheatmap")
+library("DEGreport")
+library("RColorBrewer")
+library(viridis)
+library(EnsDb.Hsapiens.v79)
+```
+```{r}
+setwd("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2")
+
+#read in TF list from fantom 5
+TF_list<- read_csv("fantom5_humanTF_list.csv") 
+TF_list_ensembl<- ensembldb::select(EnsDb.Hsapiens.v79, keys= as.character(TF_list$EntrezGene), keytype = "ENTREZID", columns = c("GENEID")) %>% dplyr::filter(!grepl("LRG", GENEID))
+
+#read in counts from DESeq2, add a isTF column
+counts<- read_tsv("DESeq2_normalized_counts.tsv") %>% separate("ENSEMBL", into ="ENSEMBL") %>% mutate(isTF = case_when(ENSEMBL %in% TF_list_ensembl$GENEID ~ "yes", !ENSEMBL %in% TF_list_ensembl$GENEID ~ "no")) 
+
+counts_avg<- counts %>% mutate(avg_0= (counts$NPC_0hr_1+ counts$NPC_0hr_2)/2, avg_6= (counts$NPC_6hr_1+ counts$NPC_6hr_2)/2, avg_12= (counts$NPC_12hr_1+ counts$NPC_12hr_2)/2, avg_24= (counts$NPC_24hr_1+ counts$NPC_24hr_2)/2, avg_48= (counts$NPC_48hr_1+ counts$NPC_48hr_2)/2, avg_72= (counts$NPC_72hr_1+ counts$NPC_72hr_2)/2, avg_108= (counts$NPC_108hr_1+ counts$NPC_108hr_2)/2, avg_6d= (counts$NPC_6d_1+ counts$NPC_6d_2)/2, avg_12d= (counts$NPC_12d_1+ counts$NPC_12d_2)/2) %>% dplyr::select("isTF",1,21:29) %>% dplyr::filter(isTF == "yes")
+
+symbols<- ensembldb::select(EnsDb.Hsapiens.v79, keys= counts$ENSEMBL, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
+counts_symbol <- inner_join(symbols, counts_avg, by = c("GENEID" = "ENSEMBL"))
+
+#read in the significantly changing from LRT 
+sig_res_LRT<- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/LRT_sigGenes.tsv") %>% separate("gene", into ="ENSEMBL")
+
+counts_symbol_sigLRT <- dplyr::filter(counts_symbol, GENEID %in% sig_res_LRT$ENSEMBL)
+
+m_counts_symbol_sigLRT<- dplyr::select(counts_symbol_sigLRT, 1, 4:12) %>% column_to_rownames(var = "SYMBOL")
+
+```
+
+```{r}
+
+TF_heatmap<- pheatmap(m_counts_symbol_sigLRT, scale = "row", cluster_cols = F, cutree_rows = 6, show_rownames = F, main = "TF Expression Patterns", color = rev(c("#B2182B", "#D6604D", "#F4A582", "#FDDBC7", "#D1E5F0", "#92C5DE", "#4393C3", "#2166AC")))
+clusters_TF<- cutree(TF_heatmap$tree_row, k=6)
+anno <- as.data.frame(clusters_TF)
+anno$clusters_TF <-as.factor(anno$clusters_TF)
+TF_heatmap<- pheatmap(m_counts_symbol_sigLRT, scale = "row", cluster_cols = F, cutree_rows = 6, show_rownames = F, annotation_row = anno, main = "TF Expression Patterns", color = rev(c("#B2182B", "#D6604D", "#F4A582", "#FDDBC7", "#D1E5F0", "#92C5DE", "#4393C3", "#2166AC")))
+clusters_TF<- as.data.frame(clusters_TF) %>% rownames_to_column(var = "TF")
+#ggsave(TF_heatmap, file = "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/Figures/TF_expression_patterns.pdf")
+```
