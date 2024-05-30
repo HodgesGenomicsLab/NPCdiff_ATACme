@@ -1,0 +1,105 @@
+---
+title: Center Methylation Data- roimethstat
+---
+```{r Libraries, warning=FALSE, echo=FALSE}
+require(ggplot2)
+library(tidyverse)
+library(RColorBrewer)
+library(data.table)
+```
+## roi calculated with .meth files
+```{r warning=FALSE}
+
+setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat")
+
+cluster_assign <- readr::read_tsv(file ="~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/peak_subset_dynamic.bed", col_names = c("chr", "start", "end", "cluster", "peak"))
+
+roi_files <- list("dynamic_peak_0hr.roimeth", "dynamic_peak_6hr.roimeth", "dynamic_peak_12hr.roimeth", "dynamic_peak_24hr.roimeth", "dynamic_peak_48hr.roimeth", "dynamic_peak_72hr.roimeth", "dynamic_peak_108hr.roimeth", "dynamic_peak_6day.roimeth", "dynamic_peak_12day.roimeth")
+
+read <- function(file){
+  name <- unlist(strsplit(file, "_"))
+  time <- name[3]
+  peak <- read_tsv(file = file, col_names = c("chr" ,"start", "end", "name", "per_meth", "strand"), col_type = "cnncnc") %>% 
+  separate(col = name, into = c("Cluster", "CpGs", "cov_CpGs", "meth_reads", "reads"), sep = ":" ) %>% mutate(Time = time) %>%
+  separate(col = Time, into = c("time", NA))
+}
+
+roi_regions <- lapply(roi_files, read)
+
+all_time_roi_regions <- rbindlist(roi_regions)
+
+roi_table_matrix <- pivot_wider(all_time_roi_regions, id_cols= c("chr", "start", "end"), names_from = time, values_from = per_meth) %>% drop_na() %>% mutate(id= paste0(chr,".",start,".",end)) %>% column_to_rownames(var = "id") %>% select("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+
+scale_rows = function(matrix){
+  sd= as.numeric(apply(matrix, 1, sd))
+  mean= as.numeric(apply(matrix, 1, mean))
+  zscore<- function(x){
+    (x-mean)/sd
+    }
+  matrix<-transmute_all(matrix, zscore)
+  colnames(matrix) <- c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+  matrix
+}
+
+roi_table_matrix_center <- scale_rows(roi_table_matrix) 
+
+#need to join centered methylation data with region information 
+roi_table_matrix_center <- data.frame(id = row.names(roi_table_matrix), roi_table_matrix_center) %>% separate(col = "id", into = c("chr", "start", "end"))
+
+#need matching data types to join with cluster assignments
+roi_table_matrix_center$start <- as.numeric(roi_table_matrix_center$start)
+roi_table_matrix_center$end <- as.numeric(roi_table_matrix_center$end)
+roi_table_matrix_center_id <- inner_join(cluster_assign, roi_table_matrix_center) 
+
+#rename the columns so time is properly labeled for next step
+colnames(roi_table_matrix_center_id) <- c("chr", "start", "end", "cluster", "peakid", "0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+
+roi_table_matrix_center_id_long <- tidyr::pivot_longer(roi_table_matrix_center_id, names_to = "Time", values_to = "roi_meth_stand", 6:14)
+
+write_tsv(roi_table_matrix_center_id_long, file ="~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_roi_meth_counts_dynamicClusters.tsv")
+
+
+```
+## roi calculated with cov5 .meth files
+```{r warning=FALSE}
+setwd("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat")
+
+cov5_roi_files <- list("dynamic_peak_0hr_cov5.roimeth", "dynamic_peak_6hr_cov5.roimeth", "dynamic_peak_12hr_cov5.roimeth", "dynamic_peak_24hr_cov5.roimeth", "dynamic_peak_48hr_cov5.roimeth", "dynamic_peak_72hr_cov5.roimeth", "dynamic_peak_108hr_cov5.roimeth", "dynamic_peak_6day_cov5.roimeth", "dynamic_peak_12day_cov5.roimeth")
+
+read <- function(file){
+  name <- unlist(strsplit(file, "_"))
+  time <- name[3]
+  peak <- read_tsv(file = file, col_names = c("chr" ,"start", "end", "name", "per_meth", "strand"), col_type = "cnncnc") %>% 
+  separate(col = name, into = c("Cluster", "CpGs", "cov_CpGs", "meth_reads", "reads"), sep = ":" ) %>% mutate(Time = time) %>%
+  separate(col = Time, into = c("time", NA))
+}
+
+cov5_roi_regions <- lapply(cov5_roi_files, read)
+
+all_time_cov5_roi_regions <- rbindlist(cov5_roi_regions)
+
+cov5_roi_table_matrix <- pivot_wider(all_time_cov5_roi_regions, id_cols= c("chr", "start", "end", "Cluster"), names_from = time, values_from = per_meth) %>% drop_na() %>% select("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+
+cov5_roi_table_id <- pivot_wider(all_time_cov5_roi_regions, id_cols= c("chr", "start", "end", "Cluster"), names_from = time, values_from = per_meth) %>% drop_na() %>% select("chr", "start", "end", "Cluster")
+
+scale_rows = function(matrix){
+  sd= as.numeric(apply(matrix, 1, sd))
+  mean= as.numeric(apply(matrix, 1, mean))
+  zscore<- function(x){
+    (x-mean)/sd
+    }
+  matrix<-transmute_all(matrix, zscore)
+  colnames(matrix) <- c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+  matrix
+}
+
+cov5_roi_table_matrix_center <- scale_rows(cov5_roi_table_matrix) 
+
+cov5_roi_table_matrix_center_id <- inner_join(cluster_assign, cov5_roi_table_matrix_center)
+
+cov5_roi_table_matrix_center_id_long <- tidyr::pivot_longer(cov5_roi_table_matrix_center_id, names_to = "Time", values_to = "roi_meth_stand", 5:13)
+
+write_tsv(cov5_roi_table_matrix_center_id_long, file ="~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_cov5_roi_meth_counts_dynamicClusters.tsv")
+
+```
+```
