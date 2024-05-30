@@ -1,0 +1,61 @@
+---
+title: Methylation Patterns of Accessibile Regions 
+---
+```{r Libraries, warning = FALSE, echo=FALSE, message=FALSE}
+library("tidyverse")
+library("VennDiagram")
+library("pheatmap")
+library("RColorBrewer")
+```
+# Visualize Cluster Relationships
+the clustering of regions by methylation values was done on accre using the script hclust.R. The file that is read in here was produced from that script and contains the region ID info, the average methylation score at each timepoint, the accessibility cluster, and the methylation cluster. Regions that contained less than 0.1 methylation score at all timepoints have been filtered out as stablely methylated regions.
+```{r}
+allpeak_bothClusterID <- read_tsv(file =  "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/peak0.1_withMeth_clusterids_ward9.tsv")
+```{r}
+delta_meth <- read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/allTime_allPeak_roiMeth.tsv") %>% mutate(total_delta = `12day`-`0hr`, after48_delta = `12day`- `48hr`, to48_delta = `48hr`- `0hr`) %>% 
+       mutate(total_group = case_when(total_delta <= -0.1 ~ "loss", 
+                             total_delta >= 0.1 ~ "gain",
+                             total_delta > -0.1 & total_delta <0.1 ~ "stable"), 
+             after48_group = case_when(after48_delta <= -0.1 ~ "loss", 
+                             after48_delta >= 0.1 ~ "gain",
+                             after48_delta > -0.1 & after48_delta <0.1 ~ "stable"),
+             to48_group = case_when(to48_delta <= -0.1 ~ "loss", 
+                             to48_delta >= 0.1 ~ "gain",
+                             to48_delta > -0.1 & to48_delta <0.1 ~ "stable"))
+
+delta_meth_violin <- delta_meth%>% pivot_longer(13:15, names_to= "timeWindow", values_to = "delta") %>% select(timeWindow, delta)%>% mutate(group = case_when(delta <= -0.1 ~ "loss", 
+                             delta >= 0.1 ~ "gain",
+                             delta > -0.1 & delta <0.1 ~ "stable"))
+delta_meth_sum<- delta_meth_violin%>% group_by(timeWindow,group) %>% summarise(count = n())
+delta_meth_sum
+
+allpeak_cluster_delta<- inner_join(allpeak_bothClusterID, delta_meth)
+
+toPlot_total <- allpeak_cluster_delta %>% group_by(acc_cluster) %>% dplyr::count(total_group)
+acc_totalDelta <- ggplot(toPlot, aes(x= acc_cluster, y=n, fill = total_group))+
+  geom_bar(position = "fill", stat = "identity", color = "grey30")+
+  labs(x= "Accessibility Group",
+       y= "Proportion",
+      title="Bheavior Integration- total delta")+
+  theme_minimal()+
+  theme(plot.title = element_text(hjust=0.5, face="bold"), plot.subtitle=element_text(hjust=0.5, face="italic"))+
+  scale_fill_manual(values = c(loss = "steelblue3", stable = "gray30", gain = "indianred1"))
+acc_totalDelta
+ggsave(acc_totalDelta, file= "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/Acc_methIntegration_barplotPercent_byAcc.pdf", device = cairo_pdf)
+
+```
+```{r}
+meth_violin <- delta_meth%>% pivot_longer(4:12, names_to= "time", values_to = "per_meth")
+meth_violin$time <- factor(meth_violin$time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")) 
+meth_violin_plot<- ggplot(meth_violin, aes(x=time, y=per_meth, fill=total_group)) +
+    geom_violin(position=position_dodge(0.60), width=0.6)+
+    geom_boxplot(aes(alpha = 0.25), outlier.shape =NA)+
+    facet_wrap(~total_group, ncol=3)+
+    xlab("Time (hrs)")+
+    ylab("Average Methylation")+
+    ggtitle(paste0("DNA Methylation by Cluster"))+
+    scale_fill_manual(values = c(loss = "steelblue3", stable = "gray30", gain = "indianred1"))+
+    scale_fill_manual(values = c(loss = "steelblue3", stable = "gray30", gain = "indianred1"))+
+    theme_minimal()
+ggsave(meth_violin_plot, file = "~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/Figures/DNAmethylation_accRegion_violin.pdf", units = "in", width = 8, height = 3)
+```
