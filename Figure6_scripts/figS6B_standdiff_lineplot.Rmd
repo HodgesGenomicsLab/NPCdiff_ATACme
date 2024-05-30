@@ -1,0 +1,183 @@
+---
+title: Accessibility, Methylation, and 5hmC Boxplots
+---
+```{r  warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gghighlight)
+library(RColorBrewer)
+library(tidyverse)
+library(DESeq2)
+library(egg)
+
+peak_assignment<- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/allPeak_geneassignment.tsv")
+
+# Read in Centered Accessibility and Methylation data-- Center expression
+acc_center <- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_Acc_counts_dynamicClusters.tsv") 
+
+roi_meth_center <- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_roi_meth_counts_dynamicClusters.tsv") 
+
+cluster<- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/FINAL_cluster_assignments.tsv") %>% dplyr::select(1:5)
+acc_center2<- inner_join(cluster, acc_center,by = c("chr", "start", "end"))
+roi_meth_center2<- inner_join(cluster, roi_meth_center,by = c("chr", "start", "end"))
+
+```
+```{r}
+hmC<- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/6l_seq/modC_6L_data.tsv")
+#select relevant columns and rename
+hmC_matrix <- hmC %>% pivot_wider(values_from = reg_avg_hmC, names_from = time, id_cols = peakID) %>% select(`0` = `0day`, `96` = `4day`, `192`= `8day`)
+
+hmC_id <- hmC %>% pivot_wider(values_from = reg_avg_hmC, names_from = time, id_cols = peakID) %>% select(peakID)
+
+scale_rows = function(matrix){
+  sd= as.numeric(apply(matrix, 1, sd))
+  mean= as.numeric(apply(matrix, 1, mean))
+  zscore<- function(x){
+    (x-mean)/sd
+    }
+  matrix<-transmute_all(matrix, zscore)
+  colnames(matrix) <- c("0", "96", "192")
+  matrix
+}
+
+hmC_matrix_center <- scale_rows(hmC_matrix) 
+
+hmC_matrix_center_id <- bind_cols(hmC_id, hmC_matrix_center)
+hmC_matrix_center_id<- hmC_matrix_center_id %>% drop_na() %>% pivot_longer(values_to = "Value", names_to = "Time", cols = 2:4) %>% mutate(Type = "hmC_stand")
+hmC_center2<- inner_join(cluster, hmC_matrix_center_id,by = c("peakID"))
+
+```
+## Combine Accessibility and roi level Methylation 
+
+```{r}
+acc_center2$Time <-str_replace(acc_center2$Time,"0hr", "0")
+acc_center2$Time <-str_replace(acc_center2$Time,"6hr", "6")
+acc_center2$Time <-str_replace(acc_center2$Time,"12hr", "12")
+acc_center2$Time <-str_replace(acc_center2$Time,"24hr", "24")
+acc_center2$Time <-str_replace(acc_center2$Time,"48hr", "48")
+acc_center2$Time <-str_replace(acc_center2$Time,"72hr", "72")
+acc_center2$Time <-str_replace(acc_center2$Time,"108hr", "108")
+acc_center2$Time <-str_replace(acc_center2$Time,"6day", "144")
+acc_center2$Time <-str_replace(acc_center2$Time,"12day", "288")
+
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"0hr", "0")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"6hr", "6")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"12hr", "12")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"24hr", "24")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"48hr", "48")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"72hr", "72")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"108hr", "108")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"6day", "144")
+roi_meth_center2$Time <-str_replace(roi_meth_center2$Time,"12day", "288")
+
+combined<- full_join(roi_meth_center2, acc_center2, by = c("peakID", "Time", "chr", "start", "end", "acc_cluster", "cluster")) %>% select(-peakid, -acc_cluster)
+combined$cluster<- as.character(combined$cluster)
+combined$cluster <- replace_na(combined$cluster, "static") 
+combined2<- combined%>% pivot_longer(values_to = "Value", names_to = "Type", cols = c("roi_meth_stand", "acc_stand")) %>%filter(Time == "0" | Time =="108" | Time == "144" |Time == "288")
+
+hmC_center2$Time <- str_replace(hmC_center2$Time,"0day", "0")
+hmC_center2$Time <- str_replace(hmC_center2$Time,"4day", "96")
+hmC_center2$Time <- str_replace(hmC_center2$Time,"8day", "192")
+hmC_center3<- hmC_center2 %>% select("chr", "start", "end", "peakID", "cluster" = "acc_cluster" , "Time", "Type", "Value")
+to_plot<- rbind(combined2, hmC_center3)
+      
+to_plot$Time <- factor(to_plot$Time, levels = c(0,6,12,24,48,72,96,108,144,192,288))
+to_plot$cluster<- factor(to_plot$cluster, levels = c(3,1,2,6,4,7,5, "static"))
+
+to_plot2<- to_plot %>% select(-chr, -start, -end)
+```
+```{r warning=FALSE}
+
+plot_meth_acc <- function(table){
+plot1<- ggplot(filter(table, cluster == 1), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 1"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()+
+  theme(legend.position="none")
+
+plot2<-ggplot(filter(table, cluster == 2), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 2"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()+
+  theme(legend.position="none")
+plot3<-ggplot(filter(table, cluster == 3), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 3"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()+
+  theme(legend.position="none")
+
+plot4<-ggplot(filter(table, cluster == 4), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 4"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()+
+  theme(legend.position="none")
+
+plot5<-ggplot(filter(table, cluster == 5), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 5"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()
+
+plot6<-ggplot(filter(table, cluster == 6), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 6 "))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()+
+  theme(legend.position="none")
+
+plot7<-ggplot(filter(table, cluster == 7), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 7"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","goldenrod1", "firebrick3"))+
+  theme_minimal()+
+  theme(legend.position="none")
+  
+
+plots <- ggarrange(plot3, plot1, plot2, plot6, plot4, plot7, plot5, nrow= 3)
+
+}
+
+plots <- plot_meth_acc(to_plot)
+
+
+ggsave(plots,filename = "/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/linegraph_hmC_meth_acc.pdf", units = "in", width = 12, height = 8)
+
+```
