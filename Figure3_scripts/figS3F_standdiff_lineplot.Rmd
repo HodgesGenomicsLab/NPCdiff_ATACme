@@ -1,0 +1,208 @@
+---
+title: Accessibility, Methylation, and Expression Scatterplots and Boxplots
+---
+```{r  warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gghighlight)
+library(RColorBrewer)
+library(tidyverse)
+library(DESeq2)
+library(egg)
+
+res_rank_gene <- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/allContrast_res_rank_top0.25_genelist.tsv", col_names = "ENSEMBL", skip = 1)%>% separate("ENSEMBL", into = "ENSEMBL")
+vars_rank_gene <- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/normalizedCounts_rowVars_top0.25_genelist.tsv", col_names = "ENSEMBL", skip = 1)%>% separate("ENSEMBL", into = "ENSEMBL")
+
+peak_assignment<- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me\ NPCdiff/NPCDiff_ATACme/New_timepoints/data/allPeak_geneassignment.tsv")
+
+#read in ATAC count data from TCseq, this has been rpkm normalized
+acc <-  read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/ATAC_ExpressionTable_accClusterIDs.tsv") %>% pivot_longer(2:10, names_to= "Time", values_to= "acc")
+#change value type so data can be joined with other tables
+acc$acc_cluster <- as.character(acc$acc_cluster)
+#perform log2 transformed and rejoin with region ID information
+log2_acc<- acc %>% mutate(log2_ATAC = log2(acc)) 
+acc_gene <- inner_join(peak_assignment, log2_acc, by= c("seqnames" = "chr", "start", "end", "acc_cluster")) 
+
+expression_short<- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/DESeq2_normalized_counts.tsv") %>% separate(col = "ENSEMBL", into = "ENSEMBL") %>% mutate("0hr" = ((NPC_0hr_1+NPC_0hr_2)/2), "6hr" = ((NPC_6hr_1+NPC_6hr_2)/2), "12hr" = ((NPC_12hr_1+NPC_12hr_2)/2), "24hr" = ((NPC_24hr_1+NPC_24hr_2)/2), "48hr" = ((NPC_48hr_1+NPC_48hr_2)/2), "72hr" = ((NPC_72hr_1+NPC_72hr_2)/2), "108hr" = ((NPC_108hr_1+NPC_108hr_2)/2), "6day" = ((NPC_6d_1+NPC_6d_2)/2), "12day" = ((NPC_12d_1+NPC_12d_2)/2)) %>% dplyr::select("ENSEMBL", 20:28) 
+
+expression_short_res <- filter(expression_short, ENSEMBL %in% res_rank_gene$ENSEMBL)
+expression_short_vars <- filter(expression_short, ENSEMBL %in% vars_rank_gene$ENSEMBL)
+
+expression <- expression_short %>% pivot_longer(2:10, names_to= "Time", values_to= "expression") %>% mutate(log2_expression = log2(expression+1)) 
+expression_resFilter <- expression_short_res %>% pivot_longer(2:10, names_to= "Time", values_to= "expression") %>% mutate(log2_expression = log2(expression+1)) 
+expression_varsFilter <- expression_short_vars %>% pivot_longer(2:10, names_to= "Time", values_to= "expression") %>% mutate(log2_expression = log2(expression+1)) 
+
+meth <- read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/allTime_allPeak_roiMeth.tsv") %>% pivot_longer(4:12, names_to= "Time", values_to= "meth")
+meth_gene <- inner_join(peak_assignment, meth, by= c("seqnames" = "chr", "start", "end"))
+
+meth_expression_gene <- inner_join(expression, meth_gene, by= c("ENSEMBL", "Time"))
+meth_res_expression_gene <- inner_join(expression_resFilter, meth_gene, by= c("ENSEMBL", "Time"))
+meth_vars_expression_gene <- inner_join(expression_varsFilter, meth_gene, by= c("ENSEMBL", "Time"))
+
+acc_meth_expression_gene <- inner_join(meth_expression_gene, acc_gene, by= c("ENSEMBL", "Time", "seqnames", "start", "end", "meth_cluster", "acc_cluster"))
+acc_meth_expression_gene_save <- acc_meth_expression_gene %>% dplyr::select("ENSEMBL", "chr" = "seqnames", "start", "end", "meth_cluster", "acc_cluster", "Time", "expression", "log2_expression", "meth", "acc", "log2_ATAC")
+write_tsv(acc_meth_expression_gene_save, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/acc_meth_expression_gene.tsv")
+
+acc_meth_res_expression_gene <- inner_join(meth_res_expression_gene, acc_gene, by= c("ENSEMBL", "Time", "seqnames", "start", "end", "meth_cluster", "acc_cluster"))
+acc_meth_res_expression_gene_save <- acc_meth_res_expression_gene %>% dplyr::select("ENSEMBL", "chr" = "seqnames", "start", "end", "meth_cluster", "acc_cluster", "Time", "expression", "log2_expression", "meth", "acc", "log2_ATAC")
+write_tsv(acc_meth_res_expression_gene_save, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/acc_meth_expression_gene_topRes.tsv")
+
+acc_meth_vars_expression_gene <- inner_join(meth_vars_expression_gene, acc_gene, by= c("ENSEMBL", "Time", "seqnames", "start", "end", "meth_cluster", "acc_cluster"))
+acc_meth_vars_expression_gene_save <- acc_meth_vars_expression_gene %>% dplyr::select("ENSEMBL", "chr" = "seqnames", "start", "end", "meth_cluster", "acc_cluster", "Time", "expression", "log2_expression", "meth", "acc", "log2_ATAC")
+write_tsv(acc_meth_vars_expression_gene_save, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/acc_meth_expression_gene_topVars.tsv")
+
+clust_assign <- read_tsv("~/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/FINAL_cluster_assignments.tsv") 
+```
+# Read in Centered Accessibility and Methylation data-- Center expression
+```{r}
+acc_center <- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_Acc_counts_dynamicClusters.tsv") %>% mutate(peakID=paste0(chr,".",start,".",end))
+
+roi_meth_center <- read_tsv(file ="/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/TC_seq/Center_roi_meth_counts_dynamicClusters.tsv") %>% mutate(peakID=paste0(chr,".",start,".",end))
+
+#integrate the peak ensembl assignments
+acc_center_gene <- inner_join(peak_assignment, acc_center, by= c("seqnames" = "chr", "start", "end")) %>% dplyr::select(-cluster)
+meth_center_gene <- inner_join(peak_assignment, roi_meth_center, by= c("seqnames" = "chr", "start", "end")) %>% dplyr::select(-cluster)
+
+expression_id <- expression_short %>% dplyr::select("ENSEMBL")
+
+scale_rows = function(matrix){
+  sd= as.numeric(apply(matrix, 1, sd))
+  mean= as.numeric(apply(matrix, 1, mean))
+  zscore<- function(x){
+    (x-mean)/sd
+    }
+  matrix<-transmute_all(matrix, zscore)
+  colnames(matrix) <- c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day")
+  matrix
+}
+expression_matrix <- expression_short %>% column_to_rownames(var = "ENSEMBL")
+expression_center <- scale_rows(expression_matrix)
+
+expression_center_id <- bind_cols(expression_id, expression_center)
+write_tsv(expression_center_id, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2/center_DESeq2_normalized_counts.tsv")
+expression_center_id_res <- filter(expression_center_id, ENSEMBL %in% res_rank_gene$ENSEMBL)
+expression_center_id_vars <- filter(expression_center_id, ENSEMBL %in% vars_rank_gene$ENSEMBL)
+
+expression_center_long <- tidyr::pivot_longer(expression_center_id, names_to = "Time", values_to = "expression_center", 2:10)
+expression_center_res_long <- tidyr::pivot_longer(expression_center_id_res, names_to = "Time", values_to = "expression_center", 2:10)
+expression_center_vars_long <- tidyr::pivot_longer(expression_center_id_vars, names_to = "Time", values_to = "expression_center", 2:10)
+
+
+```
+## Combine Accessibility and roi level Methylation 
+
+```{r}
+generate_table <- function(expression_version){
+roi_combined_table <- inner_join(acc_center_gene, meth_center_gene, by = c("peakID", "Time", "seqnames", "start", "end", "width", "strand", "meth_cluster", "acc_cluster", "ENSEMBL"))
+total_combined_table <- inner_join(expression_version, roi_combined_table, by = c("Time", "ENSEMBL"))
+
+ATAC_table <- dplyr::select(total_combined_table, "ENSEMBL", "acc_cluster", "meth_cluster", "Time", "Value" = "acc_stand")
+ATAC_table$Type <- "ATAC"
+
+Meth_table <- dplyr::select(total_combined_table, "ENSEMBL", "acc_cluster", "meth_cluster", "Time", "Value"= "roi_meth_stand")
+Meth_table$Type <- "Meth"
+
+Expression_table <- dplyr::select(total_combined_table, "ENSEMBL", "acc_cluster", "meth_cluster", "Time", "Value"= "expression_center")
+Expression_table$Type <- "Expression"
+
+plot_combined_table <- rbind(ATAC_table, Meth_table, Expression_table)
+plot_combined_table$Time <- factor(plot_combined_table$Time, levels = c("0hr", "6hr", "12hr", "24hr", "48hr","72hr","108hr", "6day", "12day"))
+
+return(plot_combined_table)
+}
+
+plot_combined_table <- generate_table(expression_center_long)
+write_tsv(plot_combined_table, "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/allvalues_centered_table.tsv")
+plot_res_combined_table <- generate_table(expression_center_res_long)
+plot_vars_combined_table <- generate_table(expression_center_vars_long)
+
+```
+```{r warning=FALSE}
+plot_meth_acc <- function(table){
+plot1<- ggplot(filter(table, acc_cluster == 1), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 1 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plot2<-ggplot(filter(table, acc_cluster == 2), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 2 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plot3<-ggplot(filter(table, acc_cluster == 3), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 3 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plot4<-ggplot(filter(table, acc_cluster == 4), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 4 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plot5<-ggplot(filter(table, acc_cluster == 5), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 5 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plot6<-ggplot(filter(table, acc_cluster == 6), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 6 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plot7<-ggplot(filter(table, acc_cluster == 7), aes(x=Time, y=Value)) +
+  geom_boxplot(outlier.shape = NA, aes(fill=Type), position=position_dodge(0.60), width=0.4)+
+  stat_summary(fun=mean, geom="smooth", aes(group=Type, color= Type))+
+  xlab("Time (hrs)")+
+  ylab("Standard Difference")+
+  ggtitle(paste0("Cluster 7 Accessibility and DNA Methylation"))+
+  coord_cartesian(ylim = c(-2.5,2.5))+
+  scale_color_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  scale_fill_manual(values = c("#A6CEE3","#33A02C", "firebrick3"))+
+  theme_minimal()
+
+plots <- ggarrange(plot3, plot1, plot2, plot6, plot4, plot7, plot5, nrow= 3)
+
+}
+
+plots <- plot_meth_acc(plot_combined_table)
+plots_res <- plot_meth_acc(plot_res_combined_table)
+plots_vars <- plot_meth_acc(plot_vars_combined_table)
+
+ggsave(filename = "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/Figures/linegraph_exp_acc_meth_allClusters.pdf", plot = plots_res, device = cairo_pdf, units = "in", width = 12, height = 8)
+
+```
