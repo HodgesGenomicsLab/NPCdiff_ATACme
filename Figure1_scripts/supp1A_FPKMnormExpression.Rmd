@@ -1,0 +1,63 @@
+---
+title: Gene Expression Visualization
+---
+```{r warning=FALSE, echo=FALSE, message=FALSE}
+library("tidyverse")
+library("ggplot2")
+library("genefilter")
+library("pheatmap")
+library("factoextra")
+library("RColorBrewer")
+library(viridis)
+library(EnsDb.Hsapiens.v79)
+library("countToFPKM")
+```
+```{r}
+setwd("/DIRECTORY/to/data/")
+# Import the read count matrix data into R.
+counts <- read.delim(file = "NPCdiff_notrim_SubreadCounts.txt", skip = 1,col.names = c("geneID", "Chr", "Start", "End", "Strand", "Length", "NPC_0hr_1", "NPC_0hr_2", "NPC_108hr_1", "NPC_108hr_2", "NPC_12d_1", "NPC_12d_2", "NPC_12hr_1", "NPC_12hr_2", "NPC_24hr_1", "NPC_24hr_2", "NPC_48hr_1", "NPC_48hr_2", "NPC_6d_1", "NPC_6d_2", "NPC_6hr_1", "NPC_6hr_2", "NPC_72hr_1", "NPC_72hr_2")) %>% mutate(across(7:24, ~ . +1))
+
+counts_matrix<- counts%>% dplyr::select("geneID", "NPC_0hr_1", "NPC_0hr_2", "NPC_108hr_1", "NPC_108hr_2", "NPC_12d_1", "NPC_12d_2", "NPC_12hr_1", "NPC_12hr_2", "NPC_24hr_1", "NPC_24hr_2", "NPC_48hr_1", "NPC_48hr_2", "NPC_6d_1", "NPC_6d_2", "NPC_6hr_1", "NPC_6hr_2", "NPC_72hr_1", "NPC_72hr_2") %>% column_to_rownames(var = "geneID")
+
+
+
+# Import feature annotations.
+# Assign feature length into a numeric vector.
+gene.annotations <-  counts %>% dplyr::select("geneID", "Chr", "Start", "End", "Strand", "Length")
+featureLength <- gene.annotations$Length
+# Import sample metrics.
+# Assign mean fragment length into a numeric vector.
+samples<- c("NPC_0hr_1", "NPC_0hr_2", "NPC_108hr_1", "NPC_108hr_2", "NPC_12d_1", "NPC_12d_2", "NPC_12hr_1", "NPC_12hr_2", "NPC_24hr_1", "NPC_24hr_2", "NPC_48hr_1", "NPC_48hr_2", "NPC_6d_1", "NPC_6d_2", "NPC_6hr_1", "NPC_6hr_2", "NPC_72hr_1", "NPC_72hr_2")
+frag_length<- c("575.120743", "711.778159", "294.099306", "452.895402", "340.898923", "380.736928", "612.169011", "525.491698", "656.63939", "581.892041", "462.387478", "485.342874", "402.25581", "400.812696", "565.075475", "476.212004", "482.031663", "468.567274")
+
+samples.metrics <- data.frame(samples,frag_length)
+meanFragmentLength <- as.numeric(as.character(samples.metrics$frag_length))
+# Return FPKM into a numeric matrix.
+fpkm_matrix <- countToFPKM::fpkm(counts_matrix, featureLength, meanFragmentLength)
+fpkm_counts <- as.data.frame(fpkm_matrix) %>% rownames_to_column(var = "geneID")%>% separate("geneID", into = "ENSEMBL")
+
+SYMBOLS<- ensembldb::select(EnsDb.Hsapiens.v79, keys= fpkm_counts$ENSEMBL, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
+
+counts<- left_join(fpkm_counts, SYMBOLS, by = c("ENSEMBL"="GENEID"))
+
+write_tsv(counts, "FPKM_normalizedread_counts.tsv")
+```
+```{r}
+
+counts_avg<- counts%>% mutate(avg_0= (counts$NPC_0hr_1+ counts$NPC_0hr_2)/2, avg_6= (counts$NPC_6hr_1+ counts$NPC_6hr_2)/2, avg_12= (counts$NPC_12hr_1+ counts$NPC_12hr_2)/2, avg_24= (counts$NPC_24hr_1+ counts$NPC_24hr_2)/2, avg_48= (counts$NPC_48hr_1+ counts$NPC_48hr_2)/2, avg_72= (counts$NPC_72hr_1+ counts$NPC_72hr_2)/2, avg_108= (counts$NPC_108hr_1+ counts$NPC_108hr_2)/2, avg_6d= (counts$NPC_6d_1+ counts$NPC_6d_2)/2, avg_12d= (counts$NPC_12d_1+ counts$NPC_12d_2)/2)
+
+GOI_FPKM_avg<- counts_avg %>% dplyr::filter(SYMBOL %in% c("POU5F1", "PAX6", "SOX2" , "SOX1", "NES", "NANOG")) 
+```
+```{r}
+GOI_FPKM_avg_norm<- GOI_FPKM_avg%>% mutate(norm_0 = avg_0/avg_0, norm_6 = avg_6/avg_0, norm_12 = avg_12/avg_0, norm_24 = avg_24/avg_0, norm_48 = avg_48/avg_0, norm_72 = avg_72/avg_0, norm_108 = avg_108/avg_0, norm_6d = avg_6d/avg_0, norm_12d = avg_12d/avg_0) %>% dplyr::filter(SYMBOL %in% c("POU5F1", "NANOG", "PAX6", "SOX2", "SOX1", "NES"))
+GOI_FPKM_avg_norm<- GOI_FPKM_avg_norm %>% dplyr::select(SYMBOL, 30:38) %>% pivot_longer(2:10, names_to = "time", values_to = "norm_exp")
+GOI_FPKM_avg_norm$time <- factor(GOI_FPKM_avg_norm$time, levels = c("norm_0", "norm_6", "norm_12", "norm_24", "norm_48", "norm_72", "norm_108", "norm_6d", "norm_12d"))
+expression_markers<- ggplot(GOI_FPKM_avg_norm, aes(x = time, y = norm_exp, group = SYMBOL, color = SYMBOL))+
+  geom_line()+
+  geom_point()+
+  facet_wrap(~SYMBOL, scales = "free_y")+
+  scale_color_brewer(palette = "Set2")+
+  theme_minimal()
+expression_markers
+
+```
