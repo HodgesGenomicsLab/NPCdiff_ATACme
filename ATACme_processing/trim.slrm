@@ -25,7 +25,7 @@ source activate trim_galore
 # unpaired reads are retained in case of any necessary analysis
 # These can be discarded if disk storage space is an issue
 
-trim_galore -j 2 --fastqc --fastqc_args "--outdir ${FASTQC_DIR}" --clip_R1 9 --clip_R2 9 --paired --retain_unpaired --output_dir ${TRIM_DIR} $$
+trim_galore -j 2 --fastqc --fastqc_args "--outdir ${FASTQC_DIR}" --clip_R1 9 --clip_R2 9 --paired --retain_unpaired --output_dir ${TRIM_DIR} ${R1} ${R2}
 
 
 
