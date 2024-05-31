@@ -1,0 +1,72 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=4:00:00
+#SBATCH --mem=32G
+#SBATCH --error=plot_footprints%A.error
+#SBATCH --out=plot_footprints%A.out
+#SBATCH --mail-user=your.name@institution.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="plot_TOBIAS_footprints"
+
+mkdir /data/hodges_lab/NPCdiff_ATACme/data/211123_footprint/${1}_cluster
+
+FOOTPRINTDR=/data/hodges_lab/NPCdiff_ATACme/data/211123_footprint
+CLUSTERDR=/data/hodges_lab/NPCdiff_ATACme/data/TC_seq
+METHDR=/data/hodges_lab/NPCdiff_ATACme/data/tracks
+
+module restore anaconda
+source activate deeptools
+
+
+#create a matrix of cut sites across footprint bed regions
+computeMatrix reference-point --regionsFileName ${FOOTPRINTDR}/${1}_cluster/${1}_cluster3.bed \
+        ${FOOTPRINTDR}/${1}_cluster/${1}_cluster1.bed \
+        ${FOOTPRINTDR}/${1}_cluster/${1}_cluster2.bed \
+        ${FOOTPRINTDR}/${1}_cluster/${1}_cluster6.bed \
+        ${FOOTPRINTDR}/${1}_cluster/${1}_cluster4.bed \
+	      ${FOOTPRINTDR}/${1}_cluster/${1}_cluster7.bed \
+        ${FOOTPRINTDR}/${1}_cluster/${1}_cluster5.bed \
+        -S ${FOOTPRINTDR}/ATACme_0hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_6hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_12hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_24hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_48hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_72hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_108hr_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_6day_merged.CutCount.bw \
+        ${FOOTPRINTDR}/ATACme_12day_merged.CutCount.bw \
+        -b 200 -a 200 -bs 5 --referencePoint center --missingDataAsZero -p 8 \
+        --outFileSortedRegions ${FOOTPRINTDR}/${1}_cluster/${1}_footprint_clustersorted_cutsite.bed \
+        -o ${FOOTPRINTDR}/${1}_cluster/${1}_clustered_footprint_cutsite.matrix
+
+# create plots
+plotHeatmap --matrixFile ${FOOTPRINTDR}/${1}_cluster/${1}_clustered_footprint_cutsite.matrix --outFileName ${FOOTPRINTDR}/${1}_cluster/${1}_clustered_footprint_cutsite.pdf
+        --heatmapHeight 20 --heatmapWidth 10 --sortRegions descend \
+        --xAxisLabel "${1} Footprint Motif Sites" --startLabel "Region Start" --endLabel "Region End" \
+        --regionsLabel "${1} Motif Footprints" --colorMap GnBu --refPointLabel "Motif Center"
+
+#create a matrix of methylation across footprint bed regions
+computeMatrix reference-point --regionsFileName ${FOOTPRINTDR}/${1}_cluster/${1}_footprint_clustersorted_cutsite.bed \
+        -S ${METHDR}/NPCdiffATACme0hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme6hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme12hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme24hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme48hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme72hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme108hr_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme6day_merge.meth.bw \
+        ${METHDR}/NPCdiffATACme12day_merge.meth.bw \
+        -b 200 -a 200 -m 500 -bs 50 --referencePoint center -p 8 \
+        --sortRegions keep \
+        -o ${FOOTPRINTDR}/${1}_cluster/${1}_clustered_footprint_meth.matrix
+
+plotHeatmap -m ${FOOTPRINTDR}/${1}_cluster/${1}_clustered_footprint_meth.matrix \
+        -o ${FOOTPRINTDR}/${1}_clustered_footprint_meth.pdf \
+    --missingDataColor silver --boxAroundHeatmaps yes --colorMap Blues \
+    --heatmapHeight 40 --heatmapWidth 10 --interpolationMethod nearest \
+    --sortRegions keep --xAxisLabel "DNA Methylation" --yMin 0 --yMax 1 \
+    --startLabel "Region Start" --endLabel "Region End" --refPointLabel "Region Center" \
+    --samplesLabel "0hr" "6hr" "12hr" "24hr" "48hr" "72hr" "108hr" "6day" "12day"
+
