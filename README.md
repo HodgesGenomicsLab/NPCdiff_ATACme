@@ -22,6 +22,25 @@ Average regional methylation can be quantified across any .bed file of interest 
 The methylation and accessibility files produced from the above steps are the basis of all subsequent analyses. 
 
 ## Figure 1
+### B: scRNA-seq
+Data analysis of scRNA-seq was done in collaboration with the Lau Lab at Vanderbilt University and all associated analysis code can be found here.
+
+### C: Data Visualization
+Data tracks for methylation and accessibility were generated, [here](Figure1_scripts/fig1C_make_bw_tracks.slrm), and uploaded to CyVerse for visualization on the UCSC Genome Browser.<br> 
+<ins>Input</ins><br>
+filtered bams were the input for accessibility<br> .meth files filtered for a CpG read coverage $\ge$ 5 were input for methylation 
+
+### D: deeptools Heatmaps
+deeptools heatmaps were generated for dynamic and static regions, [here](Figure1_scripts/fig1D_deeptools_heatmap.slrm). Dynamic regions were identified using TC-seq as explained in figure 2. <br>
+<ins>Input</ins><br>
+accessibility and methylation bigWigs (fig1C)<br>
+.bed files of regions of interest
+
+### E: Region Annotation
+Both dynamic and static regions were annotated based on their localization in the genome, [here](Figure1_scripts/fig1E_region_annotation.Rmd).<br>
+<ins>Input</ins><br>
+.bed files of regions of interest
+
 ## Figure 2
 ## Figure 3
 ## Figure 4
