@@ -1,0 +1,27 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --time=10:00:00
+#SBATCH --mem=64G
+#SBATCH --output=genrich_%A.out
+#SBATCH --error=genrich_%A.error
+#SBATCH --mail-user=your.email@institution.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="genrich"
+
+MAPPED_1=`basename $BAM_rep1`
+echo "${MAPPED_1}"
+MAPPED_2=`basename $BAM_rep2`
+echo "${MAPPED_2}"
+
+module restore tools
+samtools sort -n $BAM_rep1 -o ${MAPPED_1}_filtered.nsort.bam
+samtools sort -n $BAM_rep2 -o ${MAPPED_2}_filtered.nsort.bam
+
+
+Genrich -t ${MAPPED_1}_filtered.nsort.bam,${MAPPED_2}_filtered.nsort.bam \
+        -o ${PROCESSED_DIR}/${MAPPED_2}_filtered.narrowPeak -f ${PROCESSED_DIR}/${MAPPED_2}_filtered.pqvalues.bed \
+        -k ${PROCESSED_DIR}/${MAPPED_2}_filtered.pval.pileups -r -e chrX,chrY,chrM -E /data/hodges_lab/hg38_genome/hg38.blacklist.bed \
+        -j -p 0.005 -q 0.01 -v
+echo "${MAPPED_2} complete"
