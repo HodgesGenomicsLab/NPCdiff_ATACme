@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --time=4:00:00
+#SBATCH --mem=32G
+#SBATCH --output=roimethstat.out
+#SBATCH --error=roimethstat.error
+#SBATCH --mail-user=your.name@institution.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="roimethstat"
+
+OUT=/data/hodges_lab/NPCdiff_ATACme/data/roimethstat
+REGION=/data/hodges_lab/NPCdiff_ATACme/data/TC_seq
+METH=/data/hodges_lab/NPCdiff_ATACme/data/methprocessed
+
+module restore tools
+
+bedtools sort -i ${REGION}/peak_subset_dynamic.bed > ${REGION}/peak_subset_dynamic.sort.bed
+
+#the P argument preserves all regions in the input even if they don't have any reads
+
+for i in 0hr 6hr 12hr 24hr 48hr 72hr 108hr 6day 12day
+do
+
+roimethstat -P -o ${OUT}/dynamic_peak_${i}.roimeth ${REGION}/peak_subset_dynamic.sort.bed \
+        ${METH}/NPCdiffATACme${i}_merge.meth
+
+roimethstat -P -o ${OUT}/dynamic_peak_${i}_cov5.roimeth ${REGION}/peak_subset_dynamic.sort.bed \
+        ${METH}/NPCdiffATACme${i}_merge.cov5.meth
+
+done
+
