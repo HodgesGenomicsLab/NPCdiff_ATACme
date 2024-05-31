@@ -1,0 +1,39 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=24:00:00
+#SBATCH --mem=64G
+#SBATCH --error=tobias.error
+#SBATCH --out=tobias.out
+#SBATCH --mail-user=your.name@institution.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="footprinting"
+
+module restore anaconda
+module restore tools
+source activate TOBIAS
+
+BAM_DIR=/data/hodges_lab/NPCdiff_ATACme/data/methprocessed
+MAP_DIR=/data/hodges_lab/NPCdiff_ATACme/data/mapped_reads
+GENOME_DIR=/data/hodges_lab/hg38_genome
+PEAK_DIR=/data/hodges_lab/NPCdiff_ATACme/data/peaks/Genrich
+PROCESSED_DIR=/data/hodges_lab/NPCdiff_ATACme/data/footprint
+
+if test -d ${PROCESSED_DIR}; then  echo "exist"; else mkdir ${PROCESSED_DIR} && echo created; fi
+
+for i in 0hr 6hr 12hr 24hr 48hr 72hr 108hr 6day 12day
+do
+samtools sort -@ 8 -o ${BAM_DIR}/NPCdiffATACme0hr_rep1.sort.bam ${BAM_DIR}/NPCdiffATACme0hr_rep1.bam
+samtools sort -@ 8 -o ${BAM_DIR}/NPCdiffATACme0hr_rep2.sort.bam ${BAM_DIR}/NPCdiffATACme0hr_rep2.bam
+
+samtools merge -f -@ 8 ${MAP_DIR}/ATACme_${i}_merged.bam ${BAM_DIR}/NPCdiffATACme0hr_rep2.sort.bam ${BAM_DIR}/NPCdiffATACme0hr_rep1.sort.bam
+samtools sort -@ 8 -o ${MAP_DIR}/ATACme_${i}_merged.sorted.bam ${MAP_DIR}/ATACme_${i}_merged.bam
+samtools index -@ 8 ${MAP_DIR}/ATACme_${i}_merged.sorted.bam ${MAP_DIR}/ATACme_${i}_merged.sorted.bam.bai
+
+TOBIAS ATACorrect --bam ${MAP_DIR}/ATACme_${i}_merged.sorted.bam  --genome ${GENOME_DIR}/hg38.fa --peaks ${PEAK_DIR}/NPCdiffATACme${i}_filtered.narrowPeak  \
+    --blacklist ${GENOME_DIR}/hg38.blacklist.bed --outdir ${PROCESSED_DIR} --cores 8
+TOBIAS ScoreBigwig --signal ${PROCESSED_DIR}/ATACme_${i}_merged.sorted_corrected.bw --regions ${PEAK_DIR}/NPCdiffATACme${i}_filtered.narrowPeak \
+    --output ${PROCESSED_DIR}/ATACme_${i}_footprints.bw --cores 8
+
+done
