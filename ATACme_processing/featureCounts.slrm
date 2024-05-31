@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=01:00:00
+#SBATCH --mem=16G
+#SBATCH --mail-user=your.name@institution.slrm
+#SBATCH --mail-type=END
+#SBATCH --job-name="featureCounts"
+#SBATCH -o featureCounts.out # Standard output
+#SBATCH -e featureCounts.err # Standard error
+#############################################
+
+module restore tools
+
+BAM_DIR=/data/hodges_lab/NPCdiff_ATACme/data/mapped_reads
+
+awk 'OFS="\t" {print $1"."$2"."$3, $1, $2, $3, "."}' /data/hodges_lab/NPCdiff_ATACme/data/peaks/Genrich/NPCdiffATACme_consensus.sort.narrowPeak \
+        > /data/hodges_lab/NPCdiff_ATACme/data/DESeq2/NPCdiffATACme_consensus.saf
+
+featureCounts -p -F SAF -T 8 -O -a /data/hodges_lab/NPCdiff_ATACme/data/DESeq2/NPCdiffATACme_consensus.saf \
+        -o /data/hodges_lab/NPCdiff_ATACme/data/DESeq2/NPCdiffATACme_allTime_featureCounts.txt \
+        ${BAM_DIR}/*_filtered.bam
