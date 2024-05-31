@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=20:00:00
+#SBATCH --mem=32G
+#SBATCH --mail-user=your.name@institution.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="featureCounts"
+#SBATCH -o unbound_footprint_featureCounts.out # Standard output
+#SBATCH -e unbound_footprint_featureCounts.err # Standard error
+#############################################
+
+module restore tools
+
+BAM_DIR=/data/hodges_lab/NPCdiff_ATACme/data/mapped_reads
+WORK_DIR=/data/hodges_lab/NPCdiff_ATACme/data/211123_footprint/TOBIAS
+
+for i in 0hr 6hr 12hr 24hr 48hr 72hr 108hr 6day 12day
+do
+
+awk 'OFS="\t" {print $1"."$2"."$3, $1, $2, $3, "."}' ${WORK_DIR}/unbound_footprint_${i}.merge.bed \
+        > ${WORK_DIR}/unbound_footprint_${i}.merge.saf
+
+featureCounts -p -F SAF -T 8 -O -a ${WORK_DIR}/unbound_footprint_${i}.merge.saf \
+        -o ${WORK_DIR}/footprintAcc/unbound_footprint${i}_featureCounts.txt \
+        ${BAM_DIR}/*_merged.bam
+
+done
