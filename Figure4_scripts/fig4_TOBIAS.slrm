@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=02:00:00
+#SBATCH --mem=64G
+#SBATCH --error=tobias.error
+#SBATCH --out=tobias.out
+#SBATCH --mail-user=your.name@institution.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="footprinting"
+
+module restore conda
+module restore tools
+source activate TOBIAS2
+
+BAM_DIR=/data/hodges_lab/NPCdiff_ATACme/data/methprocessed
+MAP_DIR=/data/hodges_lab/NPCdiff_ATACme/data/mapped_reads
+GENOME_DIR=/data/hodges_lab/hg38_genome
+PEAK_DIR=/data/hodges_lab/NPCdiff_ATACme/data/TC_seq
+PROCESSED_DIR=/data/hodges_lab/NPCdiff_ATACme/data/211123_footprint
+motifs=/data/hodges_lab/NPCdiff_ATACme/data/211123_footprint/TOBIAS/root_motifs_JASPAR.txt
+if test -d ${PROCESSED_DIR}; then  echo "exist"; else mkdir ${PROCESSED_DIR} && echo created; fi
+
+for i in 6hr 12hr 24hr 48hr 72hr 108hr 6day 12day
+do
+TOBIAS BINDetect --motifs $motifs \
+        --signals ${PROCESSED_DIR}/2111_ATACme_${i}/NPCdiffATACme${i}_footprints.bw \
+        --genome ${GENOME_DIR}/hg38.fa --peaks ${PEAK_DIR}/gf_tcseq.bed --outdir ${PROCESSED_DIR}/root_motifs_${i} \
+        --cond_names ${i} --cores 8
+done
+
