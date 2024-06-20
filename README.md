@@ -42,6 +42,25 @@ Both dynamic and static regions were annotated based on their localization in th
 .bed files of regions of interest
 
 ## Figure 2
+### A: TCseq Clustering and Visualization
+Accessible regions were clustered based on temporal behavior using [TCseq](Figure2_scripts/fig2A_TCseq.Rmd), and visualized using deepTools and ggplot2. The cluster number was determined using the code found [here](Figure2_scripts/supp2A_B_C_TC_gap.R).<br>
+<ins>Input</ins><br>
+filtered accessibility signal .bams for each timepoint replicate and consensus peak list
+
+### B and C: ChromHMM Annotation
+Regions were annotated to 18-state ChromHMM annotations at the ESC (H9) and NPC stage downloaded from [ENCODE](https://www.encodeproject.org/matrix/?type=Annotation). Regions were intersected with annotation regions as below:
+```
+bedtools intersect -u -a h9neuralstemcellENCODEhg38.bed -b peak_subset_cluster_1.bed > cluster1_NPCchromHMMhg38.bed
+```
+<ins>Input</ins><br>
+Dynamic clustered region .bed files from TCseq <br>
+annotation .bed file from ENCODE
+
+### D: Motif Enrichment Heatmaps
+Motif enrichment was performed on regions within each TCseq cluster using [HOMER](Figure2_scripts/fig2d_HOMER.slrm). Enrichment was visualized using pheatmap, scaling fold-change enrichment by TF across clusters as detailed [here](Figure2_scripts/fig2D_pheatmap.Rmd). CpG likelihood of each motif was calculated using [motto](https://github.com/MichaelMW/motto). <br>
+<ins>Input</ins><br>
+clustered accessibility .bed list<br>
+
 ## Figure 3
 ## Figure 4
 ## Figure 5
