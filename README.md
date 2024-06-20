@@ -21,6 +21,20 @@ Average regional methylation can be quantified across any .bed file of interest 
 
 The methylation and accessibility files produced from the above steps are the basis of all subsequent analyses. 
 
+# Scripts for Analysis of NPCdiff RNAseq data
+
+|Required Packages|                    |
+|---------------|---------------------
+|SAMtools/1.9   | featureCounts v2.0.0
+|BEDTools/2.28.0|
+|BamTools/2.5.1 |    
+|Anaconda3/5.0.1|
+|GSL/2.5        | 
+|GCC/8.2.0      |
+|STAR 2.6.1b    |
+|picard/2.18.27 |
+|zlib/.1.2.11   |
+# Scripts for Figure Generation
 ## Figure 1
 ### B: scRNA-seq
 Data analysis of scRNA-seq was done in collaboration with the Lau Lab at Vanderbilt University and all associated analysis code can be found here.
