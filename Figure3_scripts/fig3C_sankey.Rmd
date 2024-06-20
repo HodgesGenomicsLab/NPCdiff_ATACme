@@ -1,0 +1,71 @@
+---
+title: Sankey Plot for Dynamic Behaviors
+---
+```{r}
+library(tidyverse)
+library(networkD3)
+library(ggplot2)
+library(htmlwidgets)
+library(shiny)
+```
+```{r}
+peak_geneID<- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/allPeak_geneassignment.tsv")
+opening <- peak_geneID %>% dplyr::filter(acc_cluster == 7 | acc_cluster == 5) %>% mutate(acc= "open")
+closing <- peak_geneID %>% dplyr::filter(acc_cluster == 3 | acc_cluster == 1) %>% mutate(acc= "close")
+intermediate <- peak_geneID %>% dplyr::filter(acc_cluster == 6 | acc_cluster == 4 | acc_cluster == 2) %>% mutate(acc= "intermediate")
+acc_behavior <- rbind(opening, closing, intermediate)
+
+roi_meth <- read_tsv("/Users/lindsey/Desktop/Hodges_Lab/ATAC-me NPCdiff/NPCDiff_ATACme/New_timepoints/data/roimethstat/allTime_allPeak_roiMeth.tsv") %>% mutate(difference = (`12day` - `0hr`))
+
+roi_meth_gain <- roi_meth %>% dplyr::filter(difference >= 0.1) %>% mutate(meth= "gain")
+roi_meth_lose <- roi_meth %>% dplyr::filter(difference <= -0.1) %>% mutate(meth= "lose")
+roi_meth_stable <- roi_meth %>% dplyr::filter(difference < abs(0.1)) %>% mutate(meth= "stable")
+meth_behavior <- rbind(roi_meth_gain, roi_meth_lose, roi_meth_stable)
+
+behaviors<- inner_join(acc_behavior, meth_behavior, by = c("seqnames" = "chr", "start", "end")) %>% dplyr::select("chr" = "seqnames", "start", "end", "acc", "meth") 
+behaviors%>% group_by(acc, meth) %>% summarise(count = n())
+
+
+```
+```{r}
+##### Sankey Dataframe Preparation
+links_rv <- data.frame(
+  source = c(
+    rep("Opening", 3),
+    rep("Closing", 3),
+    rep("Intermediate", 3)
+  ),
+  target = c(
+    rep(c("Gain_methylation","Lose_methylation", "Stable_methylation"), 3)
+  ),
+  value = c(
+    100, 9737, 
+    10724, 4568,
+    1558, 5823,
+    1900, 6957,
+    10682
+  )
+)
+
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes_rv <- data.frame(
+  name=c(as.character(links_rv$source), 
+         as.character(links_rv$target)) %>% unique()
+)
+
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+links_rv$IDsource <- match(links_rv$source, nodes_rv$name)-1 
+links_rv$IDtarget <- match(links_rv$target, nodes_rv$name)-1
+
+# Make the Network
+p <- sankeyNetwork(Links = links_rv, Nodes = nodes_rv,
+                   Source = "IDsource", Target = "IDtarget",
+                   Value = "value", NodeID = "name", 
+                   sinksRight=T,
+                   iterations = 0,
+                   nodeWidth = 45, nodePadding = 120)
+
+p
+
+saveWidget(p, file = "/file/path/to/networkD3_sankey.html")
+```
