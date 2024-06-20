@@ -1,17 +1,17 @@
 # Scripts for Analysis of NPCdiff ATAC-Me data
 
-|Required Packages|
-|---------------|
-|SAMtools/1.9   |  
-|BEDTools/2.28.0|
-|BamTools/2.5.1 |    
-|Anaconda3/5.0.1|
-|GSL/2.5        | 
+|Required Packages|              |
+|---------------|--------------- 
+|SAMtools/1.9   |Genrich/version 0.6
+|BEDTools/2.28.0|featureCounts v2.0.0
+|BamTools/2.5.1 |picard/2.18.27     
+|Anaconda3/5.0.1|WALT v1.0
+|GSL/2.5        |methpipe-5.0.1
 |GCC/8.2.0      |
 
 A general outline for ATAC-Me data processing was published as part of our [protocol paper](https://www.nature.com/articles/s41596-021-00608-z) and can also be found on our [GitHub page](https://github.com/HodgesGenomicsLab/NatProtocols_ATACme).
 
-The first step for ATAC-Me data processing begins with fastq files which are [trimmed](ATACme_processing/trim.slrm) prior to starting the methylation analysis pipeline of [DNMTools](https://github.com/smithlabcode/dnmtools) (formally MethPipe) see in the [methprocess.slrm](ATACme_processing/methprocess.slrm). Resulting files contain methylation quantification for symmetric CpGs. 
+The first step for ATAC-Me data processing begins with fastq files which are [trimmed](ATACme_processing/trim.slrm) and [mapped](ATACme_processing/walt.slrm) (WALT, see below) prior to starting the methylation analysis pipeline of [DNMTools](https://github.com/smithlabcode/dnmtools) (formally MethPipe) see in the [methprocess.slrm](ATACme_processing/methprocess.slrm). Resulting files contain methylation quantification for symmetric CpGs. 
 
 Accessibility analysis is very similar to ATAC-seq analysis but must begin with an aligment method capable of working with bisulfite converted reads. We used [WALT](https://github.com/smithlabcode/walt), which is now deprecated and has been replaced with [abismal](https://github.com/smithlabcode/abismal). The resulting aligned reads are [filtered](ATACme_processing/bam_filter.slrm) for quality. To call accessible peaks in these libraries we used the [Genrich](https://github.com/jsh58/Genrich) peak caller as outlined in the [genrich.slrm](ATACme_processing/genrich.slrm) script. 
 
