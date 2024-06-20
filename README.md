@@ -83,14 +83,24 @@ Regional methylation, previously quatified, was read in for all accessible dynam
 Regions were grouped by their overall methylation trend and overall accessibility trend for the timecourse. Methylation categories were preserved from 3B. Accessibility clusters <i>Gradual Opening</i> and <i>Late Opening</i> comprised the Opening group. <i>Gradual Closing</i> and <i>Delayed Closing</i> made up the Closing group. Remaining clusters were termed Transient.
 
 ### D: deepTools Visualization
-Visualization was performed as noted in 1D with differing input region .bed files. Regions grouped by both their methylation and accessibility patterns with each combination comprising a unique .bed file. <br>
+Visualization was performed as noted in 1D with differing input region .bed files. Regions were grouped by both their methylation and accessibility patterns with each combination comprising a unique .bed file. <br>
 <ins>Input</ins><br>
-combination .bed files
+combination .bed files <br>
 methyation and accessibility .bw 
 
 ### E: 6-base Methylation Quantification
-
+modC data was  extracted from 6-base data following initial processing using modality. The modC data at each timepoint was intersected with accessible peak cluster regions and averaged across all CpG sites in the region. Subsequent processing and visualization was done in R, [here](Figure3_scripts/fig3E_mC_quant.Rmd). 
 
 ## Figure 4
+### A and B: deepTools Visualization
+Footprint sites were determined using [TOBIAS](Figure4_scripts/fig4_TOBIAS.slrm), and bound sites were intersected with dynamic accessible regions. Footprint regions were grouped by their accessibility patterns. Methylation tracks were the same signal .bw used previously and cutsite .bw were generated, [here](Figure4_scripts/fig4A_cutsitebw.slrm). Visualization using deepTools is detailed, [here](Figure4_scripts/fig4AB_footprintheatmap.slrm).<br>
+<ins>Input</ins><br>
+footprint site .bed files <br>
+methyation and cut site .bw 
+
+### C: TF Expression
+Differentially expressed transcription factor genes were plotted as a heatmap. Differential gene expression was determined using [DESeq2](RNAseq_processing/NPCdiff_DESeq2.Rmd). Significantly differentially expressed genes that were also listed in the [FANTOM SSTAR database](https://fantom.gsc.riken.jp/5/sstar/Main_Page) as a TF were graphed.
+
+
 ## Figure 5
 ## Figure 6
