@@ -48,12 +48,9 @@ Accessible regions were clustered based on temporal behavior using [TCseq](Figur
 filtered accessibility signal .bams for each timepoint replicate and consensus peak list
 
 ### B and C: ChromHMM Annotation
-Regions were annotated to 18-state ChromHMM annotations at the ESC (H9) and NPC stage downloaded from [ENCODE](https://www.encodeproject.org/matrix/?type=Annotation). Regions were intersected with annotation regions as below:
-```
-bedtools intersect -u -a h9neuralstemcellENCODEhg38.bed -b peak_subset_cluster_1.bed > cluster1_NPCchromHMMhg38.bed
-```
+Regions were annotated to 18-state ChromHMM annotations at the ESC (H9) and NPC stage downloaded from [ENCODE](https://www.encodeproject.org/matrix/?type=Annotation). Regions were intersected with annotation regions as seen [here](Figure2_scripts/fig2B_C_chromHMM.sh).<br>
 <ins>Input</ins><br>
-Dynamic clustered region .bed files from TCseq <br>
+Dynamic clustered region .bed files from TCseq<br>
 annotation .bed file from ENCODE
 
 ### D: Motif Enrichment Heatmaps
@@ -62,6 +59,17 @@ Motif enrichment was performed on regions within each TCseq cluster using [HOMER
 clustered accessibility .bed list<br>
 
 ## Figure 3
+### A: Dual Axis Data Integration
+
+### B: Methylation Change
+
+### C: Sankey Visualization
+
+### D: deepTools Visualization
+
+### E: 6-base Methylation Quantification
+
+
 ## Figure 4
 ## Figure 5
 ## Figure 6
