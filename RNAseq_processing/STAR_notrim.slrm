@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=12:00:00
+#SBATCH --mem=32G
+#SBATCH --job-name=Star_align
+#SBATCH --output=STAR_align.out
+#SBATCH --error=STAR_align.error
+#SBATCH --mail-user=lindsey.n.guerin@vanderbilt.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="STAR align"
+
+module load Anaconda3/5.0.1
+
+source activate STAR
+
+#this isn't the right annotation but used it to test out the loop and code, it worked
+
+STAR --runMode alignReads --runThreadN 8 --genomeDir /data/hodges_lab/human_genome/GRCh38_Gencode24 --readFilesCommand zcat \
+--readFilesIn ${R1} ${R2} --outFileNamePrefix ${MAPPED_DIR}/${base} \
+--outSAMtype BAM SortedByCoordinate --quantMode GeneCounts
+
+
+
+
+
+
