@@ -23,17 +23,15 @@ The methylation and accessibility files produced from the above steps are the ba
 
 # Scripts for Analysis of NPCdiff RNAseq data
 
-|Required Packages|                    |
-|---------------|---------------------
-|SAMtools/1.9   | featureCounts v2.0.0
-|BEDTools/2.28.0|
-|BamTools/2.5.1 |    
-|Anaconda3/5.0.1|
-|GSL/2.5        | 
-|GCC/8.2.0      |
-|STAR 2.6.1b    |
-|picard/2.18.27 |
-|zlib/.1.2.11   |
+|Required Packages|                  |
+|---------------|--------------------
+|SAMtools/1.9   |featureCounts v2.0.0
+|BEDTools/2.28.0|STAR 2.6.1b    
+|zlib/.1.2.11   |picard/2.18.27    
+|Anaconda3/5.0.1|BamTools/2.5.1 
+|GSL/2.5        |GCC/8.2.0      
+
+
 # Scripts for Figure Generation
 ## Figure 1
 ### B: scRNA-seq
@@ -74,12 +72,21 @@ clustered accessibility .bed list<br>
 
 ## Figure 3
 ### A: Dual Axis Data Integration
-
+Methylation was calculated at accessible peaks using roimethstat as detailed [here](Figure3_scripts/dynamic_roimethstat.slrm). Accessibility signal at cluster peak regions was calculated using [featureCounts](ATACme_processing/featureCounts.slrm). Visualization was performed using ggpot2 as shown [here](Figure3_scripts/fig3A_dualAxisplot.Rmd). <br>
+<ins>Input</ins><br>
+for methylation: .meth files from [methprocess.slrm](ATACme_processing/methprocess.slrm) and region .bed files for each cluster<br>
+for accessibility: filtered .bam files and region .bed files for each cluster<br>
 ### B: Methylation Change
+Regional methylation, previously quatified, was read in for all accessible dynamic clusters. Methylation change was placed into three categories, "lose", "stable", and "gain" based on the difference in regional methylation from the beginning to the end of the timecourse. 
 
 ### C: Sankey Visualization
+Regions were grouped by their overall methylation trend and overall accessibility trend for the timecourse. Methylation categories were preserved from 3B. Accessibility clusters <i>Gradual Opening</i> and <i>Late Opening</i> comprised the Opening group. <i>Gradual Closing</i> and <i>Delayed Closing</i> made up the Closing group. Remaining clusters were termed Transient.
 
 ### D: deepTools Visualization
+Visualization was performed as noted in 1D with differing input region .bed files. Regions grouped by both their methylation and accessibility patterns with each combination comprising a unique .bed file. <br>
+<ins>Input</ins><br>
+combination .bed files
+methyation and accessibility .bw 
 
 ### E: 6-base Methylation Quantification
 
