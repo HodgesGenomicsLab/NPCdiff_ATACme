@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=10:00:00
+#SBATCH --mem=32G
+#SBATCH --job-name=featureCounts
+#SBATCH --output=featureCounts.out
+#SBATCH --error=featureCounts.error
+#SBATCH --mail-user=lindsey.n.guerin@vanderbilt.edu
+#SBATCH --mail-type=END
+#SBATCH --job-name="featureCounts"
+
+#a is the annotation file (the GTF used to make the index) and F is the format
+#O is allow multioverlap, T is number of threads
+
+
+#never want to normalize counts if you are using DESeq2 for differential analysis
+featureCounts -F GTF -a /data/hodges_lab/NPCdiff_RNAseq/scripts/gencode.v38.annotation.gtf \
+        -G /data/hodges_lab/hg38_genome/hg38.fa \
+        -o /data/hodges_lab/NPCdiff_RNAseq/data/featureCounts/NPCdiff_notrim_SubreadCounts.txt \
+        -T 8 -O -t exon -g gene_id \
+        /data/hodges_lab/NPCdiff_RNAseq/data/notrim_filtered_bams/*filtered.bam
+
