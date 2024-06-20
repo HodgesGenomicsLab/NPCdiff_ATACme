@@ -12,6 +12,7 @@ library(viridis)
 library(EnsDb.Hsapiens.v79)
 ```
 ```{r}
+set.seed(149739)
 setwd("/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/data/DESeq2")
 
 #read in TF list from fantom 5
@@ -41,7 +42,10 @@ TF_heatmap<- pheatmap(m_counts_symbol_sigLRT, scale = "row", cluster_cols = F, c
 clusters_TF<- cutree(TF_heatmap$tree_row, k=6)
 anno <- as.data.frame(clusters_TF)
 anno$clusters_TF <-as.factor(anno$clusters_TF)
-TF_heatmap<- pheatmap(m_counts_symbol_sigLRT, scale = "row", cluster_cols = F, cutree_rows = 6, show_rownames = F, annotation_row = anno, main = "TF Expression Patterns", color = rev(c("#B2182B", "#D6604D", "#F4A582", "#FDDBC7", "#D1E5F0", "#92C5DE", "#4393C3", "#2166AC")))
+select <- c("POU3F2", "LHX2", "LHX9", "OTX2", "SOX2", "BARHL1", "NANOG", "DLX3", "EMX1", "FOXJ1", "RUNX2","TFAP2C", "NRF1", "PAX6", "ZIC3", "RFX5", "NEUROD2", "PHOX2B", "ATF2", "POU5F1")
+anno_TFname<- anno %>% rownames_to_column(var = "TF") %>% dplyr::select(-clusters_TF) 
+anno_TFname$TF<- replace(anno_TFname$TF, !(anno_TFname$TF %in% select), "")
+TF_heatmap<- pheatmap(m_counts_symbol_sigLRT, scale = "row", cluster_cols = F, cutree_rows = 6, labels_row = anno_TFname$TF, annotation_row = anno, main = "TF Expression Patterns", color = colorRampPalette(c("#2166AC", "#4393C3","#D1E5F0", "white","#FDDBC7","#D6604D", "#B2182B"))(100))
 clusters_TF<- as.data.frame(clusters_TF) %>% rownames_to_column(var = "TF")
-#ggsave(TF_heatmap, file = "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/Figures/TF_expression_patterns.pdf")
+ggsave(TF_heatmap, file = "/Users/lindsey/Desktop/Hodges_Lab/NPCdiff_RNAseq/Figures/TF_expression_patterns.pdf")
 ```
