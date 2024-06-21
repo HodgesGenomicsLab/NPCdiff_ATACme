@@ -156,14 +156,14 @@ Footprinting was performed on peaks accessible at 4.5 days, as outlined in Figur
 .bw for 5-hmC signal at each timepoint <br>
 
 ## Figure 6
-### A: Static vs. Dynamic - 5-mC + 5-hmC models
+### A: Static vs. Dynamic - 5-mC + 5-hmC Model Scatterplots
 ATAC as well as 5-mC and 5-hmC methylation values at CpGs were mapped over static and dynamic chromatin peaks. Training and testing data was derived from the 0-hour timepoint. Models were trained using the scikit-learn package and the [modality package](https://modality-docs.biomodal.com/installation.html) from Biomodal. <br> 
 <ins>Input</ins><br>
 static and dynamic .bed files <br>
 .bedgraph of ATAC values <br>
 .zarrz file of methylation values across timepoints, filtered for 0 hour <br>
 
-### B - D: 
+### B - D: Comparative Model Performance Barplots
 Models were trained on one timepoint data (0 hour, 4 day, or 8 day) and testing across timepoints (0 hour, 4 day, and 8 day). Three models per timepoint-timepoint pair were fit on three groups of methylation data: mC only, hmC only, and mC + hmC. Loading, training, and testing utilized functions from the [modality package](https://modality-docs.biomodal.com/installation.html). <br>
 <ins>Input</ins><br>
 static and dynamic .bed files <br>
