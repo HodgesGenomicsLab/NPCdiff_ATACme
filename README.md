@@ -67,6 +67,7 @@ Methylation was calculated at accessible peaks using roimethstat as detailed [he
 <ins>Input</ins><br>
 for methylation: .meth files from [methprocess.slrm](ATACme_processing/methprocess.slrm) and region .bed files for each cluster<br>
 for accessibility: filtered .bam files and region .bed files for each cluster<br>
+
 ### B: Methylation Change
 Regional methylation, previously quatified, was read in for all accessible dynamic clusters. Methylation change was placed into three categories, "lose", "stable", and "gain" based on the difference in regional methylation from the beginning to the end of the timecourse. 
 
@@ -99,11 +100,59 @@ footprint site .bed files, filtered by binding state at each timepoint <br>
 merged .meth files for each timepoint <br>
 
 ## Figure 5
-### A: Global hmC ELISA
+### A: Global 5-hmC ELISA
 Global 5-hmC was measured via ELISA and quantified via standard curve. %hmC values at each timepoint are visualized via ggplot2.
 
-### B: 
+### B: Cell Cycle 5-hmC
+Median signal intensity was measured for gated populations (cell cycle stages) at each timepoint using Cytobank. Cell cycle stages were determined by PI and BrdU staining. Within each timepoint and biological replicate, the intensity values were normalized to the minimum population and represented as a transformed ratio. The transformed ratio is plotted for each sample using ggplot2 as outlined [here](Figure5_scripts/fig5B_cellcycle.Rmd). <br>
+<ins>Input</ins><br>
+median signal intensity for 5-hmC
 
-### C:
-### D:
+### C:Global 5-hmC 6-base
+The fraction of reads reporting 5-hmC over total reads for each CpG site were calculated from 6-base sequencing data. The 5-hmC fraction was then averaged across all dynamic peaks at each timepoint and between biological replicates. The boxplot shows the distribution of regional average 5-hmC fraction at each timepoint for all dynamic regions. The points represent the regional average 5-hmC for each replicate independently. Visualization code is shown [here](Figure5_scripts/fig5C_total5hmCquant.Rmd).
+<ins>Input</ins><br>
+.bed files for dynamic regions <br>
+dataframe containing fraction 5-hmC <br>
+
+### D: 5-hmC Fraction by Accessibility Cluster
+Average 5-hmC fraction across regions was calculated as in Figure 5C, however the data is faceted by accessibility cluster, including static regions. Visualization code is shown [here](Figure5_scripts/fig5D_5hmCquant.Rmd).
+<ins>Input</ins><br>
+.bed files for dynamic accessibility clusters <br>
+.bed files for static regions <br>
+dataframe containing fraction 5-hmC <br>
+
+### E: 5-hmC Traces
+The 5-hmC fraction at CpG sites within selected regions are shown for each timepoint. Signal is an average between two biological replicates. Visualization is produced by [Modality](Figure5_scripts/fig5EF_modality.ipynb). <br>
+<ins>Input</ins><br> 
+zarr file for 6-base sequencing data <br>
+
+### F: 5-mC Traces
+The 5-mC fraction at CpG sites within selected regions are shown for each timepoint. Signal is an average between two biological replicates. Visualization is produced by [Modality](Figure5_scripts/fig5EF_modality.ipynb). <br>
+<ins>Input</ins><br>
+zarr file for 6-base sequencing data <br>
+
+### G: 5-hmC Changes over Time
+The fraction of reads reporting 5-hmC over total reads for each CpG site were calculated from 6-base sequencing data. The 5-hmC fraction was then averaged across all peaks at each timepoint and between biological replicates. The difference between averages were across timepoints. Data was faceted by dynamic accessibility cluster. Visualization code is shown [here](Figure5_scripts/fig5G_S5E_delta5hmC.Rmd).<br>
+<ins>Input</ins><br>
+.bed files for dynamic accessibility clusters <br>
+dataframe containing fraction 5-hmC <br>
+
+### H: 5-hmC Subset Proportion
+Regional 5-hmC fraction was calculated at each timepoint and determined to be 5-hmC "high" or "low" based on a 0.10 cutoff. The proprotion of regions in each subset are shown for dynamic regions and static regions at each timepoint. Visualization code is shown [here](Figure5_scripts/fig5H_5hmCsubset.Rmd).
+<ins>Input</ins><br>
+.bed files for high and low 5-hmC regions <br>
+.bed files for static and dynamic regions <br> 
+
+### I: 5-hmC Subset Motif Enrichment
+Motif enrichment was performed on regions that had "high" and "low" 5-hmC fractions at each timepoint. The relative motif enrichment (Fold Change) for select variable motifs across groups is shown. Visualization code is shown [here](Figure5_scripts/fig5H_5hmCsubset.Rmd).
+<ins>Input</ins><br>
+.bed files for high and low 5-hmC regions
+
+### J: Footprint 5-hmC Signal
+Footprinting was performed on peaks accessible at 4.5 days, as outlined in Figure 4A. The 5-hmC signal is shown at all motifs for the root cluster, seperated by whether they were called bound or unbound by TOBIAS. Visualization is done using deepTools, as outlined [here]()<br>
+<ins>Input</ins><br>
+.bed file for bound root cluster footprint regions<br>
+.bed file for unbound root cluster footprint regions<br>
+.bw for 5-hmC signal at each timepoint <br>
+
 ## Figure 6
