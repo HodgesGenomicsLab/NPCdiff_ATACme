@@ -1,5 +1,4 @@
-# Scripts for Analysis of NPCdiff ATAC-Me data
-
+# Scripts for Data Analysis 
 |Required Packages|              |
 |---------------|--------------- 
 |SAMtools/1.9   |Genrich/version 0.6
@@ -7,7 +6,8 @@
 |BamTools/2.5.1 |picard/2.18.27     
 |Anaconda3/5.0.1|WALT v1.0
 |GSL/2.5        |methpipe-5.0.1
-|GCC/8.2.0      |
+|GCC/8.2.0      |STAR 2.6.1b   
+|zlib/.1.2.11   |
 
 A general outline for ATAC-Me data processing was published as part of our [protocol paper](https://www.nature.com/articles/s41596-021-00608-z) and can also be found on our [GitHub page](https://github.com/HodgesGenomicsLab/NatProtocols_ATACme).
 
@@ -20,17 +20,8 @@ A consensus bed file of accessible peaks was made by concatenating peak calls fr
 Average regional methylation can be quantified across any .bed file of interest and was performed many times throughout this manuscript. An example of such analysis can be found [here](ATACme_processing/roimethstat.slrm). 
 
 The methylation and accessibility files produced from the above steps are the basis of all subsequent analyses. 
-
-# Scripts for Analysis of NPCdiff RNAseq data
-
-|Required Packages|                  |
-|---------------|--------------------
-|SAMtools/1.9   |featureCounts v2.0.0
-|BEDTools/2.28.0|STAR 2.6.1b    
-|zlib/.1.2.11   |picard/2.18.27    
-|Anaconda3/5.0.1|BamTools/2.5.1 
-|GSL/2.5        |GCC/8.2.0      
-
+  
+All scripts for processing of RNA-seq, scRNA-seq, and 6-base evoC data are included in their respective folders. 
 
 # Scripts for Figure Generation
 ## Figure 1
@@ -99,8 +90,20 @@ footprint site .bed files <br>
 methyation and cut site .bw 
 
 ### C: TF Expression
-Differentially expressed transcription factor genes were plotted as a heatmap. Differential gene expression was determined using [DESeq2](RNAseq_processing/NPCdiff_DESeq2.Rmd). Significantly differentially expressed genes that were also listed in the [FANTOM SSTAR database](https://fantom.gsc.riken.jp/5/sstar/Main_Page) as a TF were graphed.
+Differentially expressed transcription factor genes were plotted as a heatmap. Differential gene expression was determined using [DESeq2](RNAseq_processing/NPCdiff_DESeq2.Rmd). Significantly differentially expressed genes that were also listed in the [FANTOM SSTAR database](https://fantom.gsc.riken.jp/5/sstar/Main_Page) as a TF were graphed. <br>
 
+### D and E: Footprint Methylation
+Regional methylation was calculated for all bound transcription factor binding sites. The regional methylation was calculated using the [roimethstat](ATACme_processing/roimethstat.slrm) script mentioned above. <br>
+<ins>Input</ins><br>
+footprint site .bed files, filtered by binding state at each timepoint <br>
+merged .meth files for each timepoint <br>
 
 ## Figure 5
+### A: Global hmC ELISA
+Global 5-hmC was measured via ELISA and quantified via standard curve. %hmC values at each timepoint are visualized via ggplot2.
+
+### B: 
+
+### C:
+### D:
 ## Figure 6
