@@ -109,13 +109,13 @@ Median signal intensity was measured for gated populations (cell cycle stages) a
 median signal intensity for 5-hmC
 
 ### C:Global 5-hmC 6-base
-The fraction of reads reporting 5-hmC over total reads for each CpG site were calculated from 6-base sequencing data. The 5-hmC fraction was then averaged across all dynamic peaks at each timepoint and between biological replicates. The boxplot shows the distribution of regional average 5-hmC fraction at each timepoint for all dynamic regions. The points represent the regional average 5-hmC for each replicate independently. Visualization code is shown [here](Figure5_scripts/fig5C_total5hmCquant.Rmd).
+The fraction of reads reporting 5-hmC over total reads for each CpG site were calculated from 6-base sequencing data. The 5-hmC fraction was then averaged across all dynamic peaks at each timepoint and between biological replicates. The boxplot shows the distribution of regional average 5-hmC fraction at each timepoint for all dynamic regions. The points represent the regional average 5-hmC for each replicate independently. Visualization code is shown [here](Figure5_scripts/fig5C_total5hmCquant.Rmd).<br>
 <ins>Input</ins><br>
 .bed files for dynamic regions <br>
 .csv containing fraction 5-hmC <br>
 
 ### D: 5-hmC Fraction by Accessibility Cluster
-Average 5-hmC fraction across regions was calculated as in Figure 5C, however the data is faceted by accessibility cluster, including static regions. Visualization code is shown [here](Figure5_scripts/fig5D_5hmCquant.Rmd).
+Average 5-hmC fraction across regions was calculated as in Figure 5C, however the data is faceted by accessibility cluster, including static regions. Visualization code is shown [here](Figure5_scripts/fig5D_5hmCquant.Rmd).<br>
 <ins>Input</ins><br>
 .bed files for dynamic accessibility clusters <br>
 .bed files for static regions <br>
@@ -138,13 +138,13 @@ The fraction of reads reporting 5-hmC over total reads for each CpG site were ca
 dataframe containing fraction 5-hmC <br>
 
 ### H: 5-hmC Subset Proportion
-Regional 5-hmC fraction was calculated at each timepoint and determined to be 5-hmC "high" or "low" based on a 0.10 cutoff. The proprotion of regions in each subset are shown for dynamic regions and static regions at each timepoint. Visualization code is shown [here](Figure5_scripts/fig5H_5hmCsubset.Rmd).
+Regional 5-hmC fraction was calculated at each timepoint and determined to be 5-hmC "high" or "low" based on a 0.10 cutoff. The proprotion of regions in each subset are shown for dynamic regions and static regions at each timepoint. Visualization code is shown [here](Figure5_scripts/fig5H_5hmCsubset.Rmd).<br>
 <ins>Input</ins><br>
 .bed files for high and low 5-hmC regions <br>
 .bed files for static and dynamic regions <br> 
 
 ### I: 5-hmC Subset Motif Enrichment
-Motif enrichment was performed on regions that had "high" and "low" 5-hmC fractions at each timepoint. The relative motif enrichment (Fold Change) for select variable motifs across groups is shown. Visualization code is shown [here](Figure5_scripts/fig5H_5hmCsubset.Rmd).
+Motif enrichment was performed on regions that had "high" and "low" 5-hmC fractions at each timepoint. The relative motif enrichment (Fold Change) for select variable motifs across groups is shown. Visualization code is shown [here](Figure5_scripts/fig5H_5hmCsubset.Rmd).<br>
 <ins>Input</ins><br>
 .bed files for high and low 5-hmC regions
 
