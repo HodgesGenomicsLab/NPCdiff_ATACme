@@ -112,24 +112,24 @@ median signal intensity for 5-hmC
 The fraction of reads reporting 5-hmC over total reads for each CpG site were calculated from 6-base sequencing data. The 5-hmC fraction was then averaged across all dynamic peaks at each timepoint and between biological replicates. The boxplot shows the distribution of regional average 5-hmC fraction at each timepoint for all dynamic regions. The points represent the regional average 5-hmC for each replicate independently. Visualization code is shown [here](Figure5_scripts/fig5C_total5hmCquant.Rmd).
 <ins>Input</ins><br>
 .bed files for dynamic regions <br>
-dataframe containing fraction 5-hmC <br>
+.csv containing fraction 5-hmC <br>
 
 ### D: 5-hmC Fraction by Accessibility Cluster
 Average 5-hmC fraction across regions was calculated as in Figure 5C, however the data is faceted by accessibility cluster, including static regions. Visualization code is shown [here](Figure5_scripts/fig5D_5hmCquant.Rmd).
 <ins>Input</ins><br>
 .bed files for dynamic accessibility clusters <br>
 .bed files for static regions <br>
-dataframe containing fraction 5-hmC <br>
+.csv containing fraction 5-hmC <br>
 
 ### E: 5-hmC Traces
 The 5-hmC fraction at CpG sites within selected regions are shown for each timepoint. Signal is an average between two biological replicates. Visualization is produced by [Modality](Figure5_scripts/fig5EF_modality.ipynb). <br>
 <ins>Input</ins><br> 
-zarr file for 6-base sequencing data <br>
+.zarrz file containing 5-hmC values across timepoints <br>
 
 ### F: 5-mC Traces
 The 5-mC fraction at CpG sites within selected regions are shown for each timepoint. Signal is an average between two biological replicates. Visualization is produced by [Modality](Figure5_scripts/fig5EF_modality.ipynb). <br>
 <ins>Input</ins><br>
-zarr file for 6-base sequencing data <br>
+.zarrz file containing methylation values across timepoints <br>
 
 ### G: 5-hmC Changes over Time
 The fraction of reads reporting 5-hmC over total reads for each CpG site were calculated from 6-base sequencing data. The 5-hmC fraction was then averaged across all peaks at each timepoint and between biological replicates. The difference between averages were across timepoints. Data was faceted by dynamic accessibility cluster. Visualization code is shown [here](Figure5_scripts/fig5G_S5E_delta5hmC.Rmd).<br>
@@ -156,3 +156,16 @@ Footprinting was performed on peaks accessible at 4.5 days, as outlined in Figur
 .bw for 5-hmC signal at each timepoint <br>
 
 ## Figure 6
+### A: Static vs. Dynamic - 5-mC + 5-hmC models
+ATAC as well as 5-mC and 5-hmC methylation values at CpGs were mapped over static and dynamic chromatin peaks. Training and testing data was derived from the 0-hour timepoint. Models were trained using the scikit-learn package and the [modality package](https://modality-docs.biomodal.com/installation.html) from Biomodal. <br> 
+<ins>Input</ins><br>
+static and dynamic .bed files <br>
+.bedgraph of ATAC values <br>
+.zarrz file of methylation values across timepoints, filtered for 0 hour <br>
+
+### B - D: 
+Models were trained on one timepoint data (0 hour, 4 day, or 8 day) and testing across timepoints (0 hour, 4 day, and 8 day). Three models per timepoint-timepoint pair were fit on three groups of methylation data: mC only, hmC only, and mC + hmC. Loading, training, and testing utilized functions from the [modality package](https://modality-docs.biomodal.com/installation.html). <br>
+<ins>Input</ins><br>
+static and dynamic .bed files <br>
+.bedgraph of ATAC values <br>
+.zarrz file of methylation values across timepoints <br>
