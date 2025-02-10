@@ -1,0 +1,1248 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "── \u001b[1mAttaching core tidyverse packages\u001b[22m ──────────────────────── tidyverse 2.0.0 ──\n",
+      "\u001b[32m✔\u001b[39m \u001b[34mdplyr    \u001b[39m 1.1.2     \u001b[32m✔\u001b[39m \u001b[34mreadr    \u001b[39m 2.1.4\n",
+      "\u001b[32m✔\u001b[39m \u001b[34mforcats  \u001b[39m 1.0.0     \u001b[32m✔\u001b[39m \u001b[34mstringr  \u001b[39m 1.5.0\n",
+      "\u001b[32m✔\u001b[39m \u001b[34mggplot2  \u001b[39m 3.4.2     \u001b[32m✔\u001b[39m \u001b[34mtibble   \u001b[39m 3.2.1\n",
+      "\u001b[32m✔\u001b[39m \u001b[34mlubridate\u001b[39m 1.9.2     \u001b[32m✔\u001b[39m \u001b[34mtidyr    \u001b[39m 1.3.0\n",
+      "\u001b[32m✔\u001b[39m \u001b[34mpurrr    \u001b[39m 1.0.1     \n",
+      "── \u001b[1mConflicts\u001b[22m ────────────────────────────────────────── tidyverse_conflicts() ──\n",
+      "\u001b[31m✖\u001b[39m \u001b[34mdplyr\u001b[39m::\u001b[32mfilter()\u001b[39m masks \u001b[34mstats\u001b[39m::filter()\n",
+      "\u001b[31m✖\u001b[39m \u001b[34mdplyr\u001b[39m::\u001b[32mlag()\u001b[39m    masks \u001b[34mstats\u001b[39m::lag()\n",
+      "\u001b[36mℹ\u001b[39m Use the conflicted package (\u001b[3m\u001b[34m<http://conflicted.r-lib.org/>\u001b[39m\u001b[23m) to force all conflicts to become errors\n"
+     ]
+    }
+   ],
+   "source": [
+    "library(tidyverse)\n",
+    "library(gghighlight)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# CpGs limited by accessibility \n",
+    "\n",
+    "## dynamic regions, shared CpGs \n",
+    "\n",
+    "intersect shared CpGs from 6base_correlation.iypnb with dynamic regions as determined by TC-seq, use bedtools in command line\n",
+    "\n",
+    "```\n",
+    "module restore tools\n",
+    "\n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day0_shared_cpgs.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day0_sharedcpgs.bed\n",
+    "    \n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day4_shared_cpgs.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day4_sharedcpgs.bed\n",
+    "    \n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day8_shared_cpgs.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day8_sharedcpgs.bed\n",
+    "```\n",
+    "\n",
+    "## dynamic regions, 6-base coverage CpGs\n",
+    "intersect coverage filtered 6-base CpGs from 6base_correlation.iypnb with dynamic regions as determined by TC-seq, use bedtools in command line\n",
+    "\n",
+    "```\n",
+    "module restore tools\n",
+    "\n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day0_repavg_6base.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day0_6basecpgs.bed\n",
+    "    \n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day4_repavg_6base.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day4_6basecpgs.bed\n",
+    "    \n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day8_repavg_6base.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day8_6basecpgs.bed\n",
+    "```\n",
+    "\n",
+    "## dynamic regions, ATAC-Me coverage CpGs\n",
+    "intersect coverage filtered ATAC-Me CpGs from 6base_correlation.iypnb with dynamic regions as determined by TC-seq, use bedtools in command line\n",
+    "\n",
+    "```\n",
+    "module restore tools\n",
+    "\n",
+    "awk 'BEGIN {OFS=\"\\t\"}; {print $1,$2,$2+1,$5}' /data/hodges_lab/NPCdiff_ATACme/data/methprocessed/NPCdiffATACme0hr_merge.cov5.meth > /data/hodges_lab/6L_seq/data/day0_repavg_atacme.bed\n",
+    "awk 'BEGIN {OFS=\"\\t\"}; {print $1,$2,$2+1,$5}' /data/hodges_lab/NPCdiff_ATACme/data/methprocessed/NPCdiffATACme108hr_merge.cov5.meth > /data/hodges_lab/6L_seq/data/day4_repavg_atacme.bed\n",
+    "awk 'BEGIN {OFS=\"\\t\"}; {print $1,$2,$2+1,$5}' /data/hodges_lab/NPCdiff_ATACme/data/methprocessed/NPCdiffATACme12day_merge.cov5.meth > /data/hodges_lab/6L_seq/data/day8_repavg_atacme.bed\n",
+    "\n",
+    "\n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day0_repavg_atacme.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day0_atacmecpgs.bed\n",
+    "    \n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day4_repavg_atacme.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day4_atacmecpgs.bed\n",
+    "    \n",
+    "bedtools intersect -a /data/hodges_lab/NPCdiff_ATACme/data/TC_seq/peak_subset_dynamic.sort.bed \\\n",
+    "    -b /data/hodges_lab/6L_seq/data/day8_repavg_atacme.bed -wa -wb \\\n",
+    "    > /data/hodges_lab/6L_seq/data/dynamic_day8_atacmecpgs.bed\n",
+    "```\n",
+    "\n",
+    "save these filtered CpGs and move forward with CpGs contained in dynamic regions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[1mRows: \u001b[22m\u001b[34m136234\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m12\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (9): region_start, region_end, cluster, start, end, sixbase, atacme, X11...\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n",
+      "\u001b[1mRows: \u001b[22m\u001b[34m179426\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m12\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (9): region_start, region_end, cluster, start, end, sixbase, atacme, X11...\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n",
+      "\u001b[1mRows: \u001b[22m\u001b[34m164745\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m12\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (9): region_start, region_end, cluster, start, end, sixbase, atacme, X11...\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n"
+     ]
+    }
+   ],
+   "source": [
+    "day0_shared_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day0_sharedcpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"sixbase\", \"atacme\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))\n",
+    "day4_shared_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day4_sharedcpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"sixbase\", \"atacme\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))\n",
+    "day8_shared_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day8_sharedcpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"sixbase\", \"atacme\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[1mRows: \u001b[22m\u001b[34m212579\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m20\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m  (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (17): region_start, region_end, cluster, start, end, sixbase, atacme, X1...\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n",
+      "\u001b[1mRows: \u001b[22m\u001b[34m196113\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m20\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m  (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (17): region_start, region_end, cluster, start, end, sixbase, atacme, X1...\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n",
+      "\u001b[1mRows: \u001b[22m\u001b[34m215076\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m20\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m  (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (17): region_start, region_end, cluster, start, end, sixbase, atacme, X1...\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n"
+     ]
+    }
+   ],
+   "source": [
+    "day0_6base_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day0_6basecpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"sixbase\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))\n",
+    "day4_6base_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day4_6basecpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"sixbase\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))\n",
+    "day8_6base_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day8_6basecpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"sixbase\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[1mRows: \u001b[22m\u001b[34m143416\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m9\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (6): region_start, region_end, cluster, start, end, atacme\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n",
+      "\u001b[1mRows: \u001b[22m\u001b[34m203688\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m9\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (6): region_start, region_end, cluster, start, end, atacme\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n",
+      "\u001b[1mRows: \u001b[22m\u001b[34m169952\u001b[39m \u001b[1mColumns: \u001b[22m\u001b[34m9\u001b[39m\n",
+      "\u001b[36m──\u001b[39m \u001b[1mColumn specification\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n",
+      "\u001b[1mDelimiter:\u001b[22m \"\\t\"\n",
+      "\u001b[31mchr\u001b[39m (3): region_chr, peakID, chr\n",
+      "\u001b[32mdbl\u001b[39m (6): region_start, region_end, cluster, start, end, atacme\n",
+      "\n",
+      "\u001b[36mℹ\u001b[39m Use `spec()` to retrieve the full column specification for this data.\n",
+      "\u001b[36mℹ\u001b[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.\n"
+     ]
+    }
+   ],
+   "source": [
+    "day0_atacme_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day0_atacmecpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"atacme\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))\n",
+    "day4_atacme_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day4_atacmecpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"atacme\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))\n",
+    "day8_atacme_region <- read_tsv(file = \"/data/hodges_lab/6L_seq/data/dynamic_day8_atacmecpgs.bed\",\n",
+    "                              col_names = c(\"region_chr\", \"region_start\", \"region_end\", \"cluster\", \"peakID\", \n",
+    "                                            \"chr\", \"start\", \"end\", \"atacme\"))%>% \n",
+    "    mutate(behavior = case_when(cluster == 5 | cluster == 7 ~ \"opening\", cluster == 2 | cluster == 4 | cluster == 6 ~ \"transient\", cluster == 3 | cluster == 1 ~ \"closing\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "136234"
+      ],
+      "text/latex": [
+       "136234"
+      ],
+      "text/markdown": [
+       "136234"
+      ],
+      "text/plain": [
+       "[1] 136234"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "30533"
+      ],
+      "text/latex": [
+       "30533"
+      ],
+      "text/markdown": [
+       "30533"
+      ],
+      "text/plain": [
+       "[1] 30533"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "47800"
+      ],
+      "text/latex": [
+       "47800"
+      ],
+      "text/markdown": [
+       "47800"
+      ],
+      "text/plain": [
+       "[1] 47800"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "57901"
+      ],
+      "text/latex": [
+       "57901"
+      ],
+      "text/markdown": [
+       "57901"
+      ],
+      "text/plain": [
+       "[1] 57901"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "212579"
+      ],
+      "text/latex": [
+       "212579"
+      ],
+      "text/markdown": [
+       "212579"
+      ],
+      "text/plain": [
+       "[1] 212579"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "84002"
+      ],
+      "text/latex": [
+       "84002"
+      ],
+      "text/markdown": [
+       "84002"
+      ],
+      "text/plain": [
+       "[1] 84002"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "68350"
+      ],
+      "text/latex": [
+       "68350"
+      ],
+      "text/markdown": [
+       "68350"
+      ],
+      "text/plain": [
+       "[1] 68350"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "60227"
+      ],
+      "text/latex": [
+       "60227"
+      ],
+      "text/markdown": [
+       "60227"
+      ],
+      "text/plain": [
+       "[1] 60227"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "143416"
+      ],
+      "text/latex": [
+       "143416"
+      ],
+      "text/markdown": [
+       "143416"
+      ],
+      "text/plain": [
+       "[1] 143416"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "32554"
+      ],
+      "text/latex": [
+       "32554"
+      ],
+      "text/markdown": [
+       "32554"
+      ],
+      "text/plain": [
+       "[1] 32554"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "49474"
+      ],
+      "text/latex": [
+       "49474"
+      ],
+      "text/markdown": [
+       "49474"
+      ],
+      "text/plain": [
+       "[1] 49474"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "61388"
+      ],
+      "text/latex": [
+       "61388"
+      ],
+      "text/markdown": [
+       "61388"
+      ],
+      "text/plain": [
+       "[1] 61388"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "nrow(day0_shared_region)\n",
+    "nrow(filter(day0_shared_region, behavior == \"opening\"))\n",
+    "nrow(filter(day0_shared_region, behavior == \"transient\"))\n",
+    "nrow(filter(day0_shared_region, behavior == \"closing\"))\n",
+    "nrow(day0_6base_region)\n",
+    "nrow(filter(day0_6base_region, behavior == \"opening\"))\n",
+    "nrow(filter(day0_6base_region, behavior == \"transient\"))\n",
+    "nrow(filter(day0_6base_region, behavior == \"closing\"))\n",
+    "nrow(day0_atacme_region)\n",
+    "nrow(filter(day0_atacme_region, behavior == \"opening\"))\n",
+    "nrow(filter(day0_atacme_region, behavior == \"transient\"))\n",
+    "nrow(filter(day0_atacme_region, behavior == \"closing\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "0.949921905505662"
+      ],
+      "text/latex": [
+       "0.949921905505662"
+      ],
+      "text/markdown": [
+       "0.949921905505662"
+      ],
+      "text/plain": [
+       "[1] 0.9499219"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.937918535356638"
+      ],
+      "text/latex": [
+       "0.937918535356638"
+      ],
+      "text/markdown": [
+       "0.937918535356638"
+      ],
+      "text/plain": [
+       "[1] 0.9379185"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.96616404576141"
+      ],
+      "text/latex": [
+       "0.96616404576141"
+      ],
+      "text/markdown": [
+       "0.96616404576141"
+      ],
+      "text/plain": [
+       "[1] 0.966164"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.943197367563693"
+      ],
+      "text/latex": [
+       "0.943197367563693"
+      ],
+      "text/markdown": [
+       "0.943197367563693"
+      ],
+      "text/plain": [
+       "[1] 0.9431974"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "136234/143416\n",
+    "30533/32554\n",
+    "47800/49474\n",
+    "57901/61388"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "179426"
+      ],
+      "text/latex": [
+       "179426"
+      ],
+      "text/markdown": [
+       "179426"
+      ],
+      "text/plain": [
+       "[1] 179426"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "72402"
+      ],
+      "text/latex": [
+       "72402"
+      ],
+      "text/markdown": [
+       "72402"
+      ],
+      "text/plain": [
+       "[1] 72402"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "60846"
+      ],
+      "text/latex": [
+       "60846"
+      ],
+      "text/markdown": [
+       "60846"
+      ],
+      "text/plain": [
+       "[1] 60846"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "46178"
+      ],
+      "text/latex": [
+       "46178"
+      ],
+      "text/markdown": [
+       "46178"
+      ],
+      "text/plain": [
+       "[1] 46178"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "196113"
+      ],
+      "text/latex": [
+       "196113"
+      ],
+      "text/markdown": [
+       "196113"
+      ],
+      "text/plain": [
+       "[1] 196113"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "77874"
+      ],
+      "text/latex": [
+       "77874"
+      ],
+      "text/markdown": [
+       "77874"
+      ],
+      "text/plain": [
+       "[1] 77874"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "63251"
+      ],
+      "text/latex": [
+       "63251"
+      ],
+      "text/markdown": [
+       "63251"
+      ],
+      "text/plain": [
+       "[1] 63251"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "54988"
+      ],
+      "text/latex": [
+       "54988"
+      ],
+      "text/markdown": [
+       "54988"
+      ],
+      "text/plain": [
+       "[1] 54988"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "203688"
+      ],
+      "text/latex": [
+       "203688"
+      ],
+      "text/markdown": [
+       "203688"
+      ],
+      "text/plain": [
+       "[1] 203688"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "81609"
+      ],
+      "text/latex": [
+       "81609"
+      ],
+      "text/markdown": [
+       "81609"
+      ],
+      "text/plain": [
+       "[1] 81609"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "67851"
+      ],
+      "text/latex": [
+       "67851"
+      ],
+      "text/markdown": [
+       "67851"
+      ],
+      "text/plain": [
+       "[1] 67851"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "54228"
+      ],
+      "text/latex": [
+       "54228"
+      ],
+      "text/markdown": [
+       "54228"
+      ],
+      "text/plain": [
+       "[1] 54228"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "nrow(day4_shared_region)\n",
+    "nrow(filter(day4_shared_region, behavior == \"opening\"))\n",
+    "nrow(filter(day4_shared_region, behavior == \"transient\"))\n",
+    "nrow(filter(day4_shared_region, behavior == \"closing\"))\n",
+    "nrow(day4_6base_region)\n",
+    "nrow(filter(day4_6base_region, behavior == \"opening\"))\n",
+    "nrow(filter(day4_6base_region, behavior == \"transient\"))\n",
+    "nrow(filter(day4_6base_region, behavior == \"closing\"))\n",
+    "nrow(day4_atacme_region)\n",
+    "nrow(filter(day4_atacme_region, behavior == \"opening\"))\n",
+    "nrow(filter(day4_atacme_region, behavior == \"transient\"))\n",
+    "nrow(filter(day4_atacme_region, behavior == \"closing\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "0.880886453792074"
+      ],
+      "text/latex": [
+       "0.880886453792074"
+      ],
+      "text/markdown": [
+       "0.880886453792074"
+      ],
+      "text/plain": [
+       "[1] 0.8808865"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.887181560857258"
+      ],
+      "text/latex": [
+       "0.887181560857258"
+      ],
+      "text/markdown": [
+       "0.887181560857258"
+      ],
+      "text/plain": [
+       "[1] 0.8871816"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.896759075032056"
+      ],
+      "text/latex": [
+       "0.896759075032056"
+      ],
+      "text/markdown": [
+       "0.896759075032056"
+      ],
+      "text/plain": [
+       "[1] 0.8967591"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.851552703400457"
+      ],
+      "text/latex": [
+       "0.851552703400457"
+      ],
+      "text/markdown": [
+       "0.851552703400457"
+      ],
+      "text/plain": [
+       "[1] 0.8515527"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "179426/203688\n",
+    "72402/81609\n",
+    "60846/67851\n",
+    "46178/54228"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "164745"
+      ],
+      "text/latex": [
+       "164745"
+      ],
+      "text/markdown": [
+       "164745"
+      ],
+      "text/plain": [
+       "[1] 164745"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "84666"
+      ],
+      "text/latex": [
+       "84666"
+      ],
+      "text/markdown": [
+       "84666"
+      ],
+      "text/plain": [
+       "[1] 84666"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "45516"
+      ],
+      "text/latex": [
+       "45516"
+      ],
+      "text/markdown": [
+       "45516"
+      ],
+      "text/plain": [
+       "[1] 45516"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "34563"
+      ],
+      "text/latex": [
+       "34563"
+      ],
+      "text/markdown": [
+       "34563"
+      ],
+      "text/plain": [
+       "[1] 34563"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "215076"
+      ],
+      "text/latex": [
+       "215076"
+      ],
+      "text/markdown": [
+       "215076"
+      ],
+      "text/plain": [
+       "[1] 215076"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "84902"
+      ],
+      "text/latex": [
+       "84902"
+      ],
+      "text/markdown": [
+       "84902"
+      ],
+      "text/plain": [
+       "[1] 84902"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "68794"
+      ],
+      "text/latex": [
+       "68794"
+      ],
+      "text/markdown": [
+       "68794"
+      ],
+      "text/plain": [
+       "[1] 68794"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "61380"
+      ],
+      "text/latex": [
+       "61380"
+      ],
+      "text/markdown": [
+       "61380"
+      ],
+      "text/plain": [
+       "[1] 61380"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "169952"
+      ],
+      "text/latex": [
+       "169952"
+      ],
+      "text/markdown": [
+       "169952"
+      ],
+      "text/plain": [
+       "[1] 169952"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "87123"
+      ],
+      "text/latex": [
+       "87123"
+      ],
+      "text/markdown": [
+       "87123"
+      ],
+      "text/plain": [
+       "[1] 87123"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "46631"
+      ],
+      "text/latex": [
+       "46631"
+      ],
+      "text/markdown": [
+       "46631"
+      ],
+      "text/plain": [
+       "[1] 46631"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "36198"
+      ],
+      "text/latex": [
+       "36198"
+      ],
+      "text/markdown": [
+       "36198"
+      ],
+      "text/plain": [
+       "[1] 36198"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "nrow(day8_shared_region)\n",
+    "nrow(filter(day8_shared_region, behavior == \"opening\"))\n",
+    "nrow(filter(day8_shared_region, behavior == \"transient\"))\n",
+    "nrow(filter(day8_shared_region, behavior == \"closing\"))\n",
+    "nrow(day8_6base_region)\n",
+    "nrow(filter(day8_6base_region, behavior == \"opening\"))\n",
+    "nrow(filter(day8_6base_region, behavior == \"transient\"))\n",
+    "nrow(filter(day8_6base_region, behavior == \"closing\"))\n",
+    "nrow(day8_atacme_region)\n",
+    "nrow(filter(day8_atacme_region, behavior == \"opening\"))\n",
+    "nrow(filter(day8_atacme_region, behavior == \"transient\"))\n",
+    "nrow(filter(day8_atacme_region, behavior == \"closing\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "0.969361937488232"
+      ],
+      "text/latex": [
+       "0.969361937488232"
+      ],
+      "text/markdown": [
+       "0.969361937488232"
+      ],
+      "text/plain": [
+       "[1] 0.9693619"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.971798491787473"
+      ],
+      "text/latex": [
+       "0.971798491787473"
+      ],
+      "text/markdown": [
+       "0.971798491787473"
+      ],
+      "text/plain": [
+       "[1] 0.9717985"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.976088867920482"
+      ],
+      "text/latex": [
+       "0.976088867920482"
+      ],
+      "text/markdown": [
+       "0.976088867920482"
+      ],
+      "text/plain": [
+       "[1] 0.9760889"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "0.954831758660699"
+      ],
+      "text/latex": [
+       "0.954831758660699"
+      ],
+      "text/markdown": [
+       "0.954831758660699"
+      ],
+      "text/plain": [
+       "[1] 0.9548318"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "164745/169952\n",
+    "84666/87123\n",
+    "45516/46631\n",
+    "34563/36198"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "R",
+   "language": "R",
+   "name": "ir"
+  },
+  "language_info": {
+   "codemirror_mode": "r",
+   "file_extension": ".r",
+   "mimetype": "text/x-r-source",
+   "name": "R",
+   "pygments_lexer": "r",
+   "version": "4.4.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
