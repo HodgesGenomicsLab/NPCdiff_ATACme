@@ -1,4 +1,4 @@
- DOI: 10.5281/zenodo.15061529
+[![DOI](https://zenodo.org/badge/754316187.svg)](https://doi.org/10.5281/zenodo.15061528)
 # Scripts for Data Analysis 
 |Required Packages|              |
 |---------------|--------------- 
